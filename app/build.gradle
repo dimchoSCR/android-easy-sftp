@@ -1,0 +1,66 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
+
+android {
+    compileSdkVersion 29
+
+    defaultConfig {
+        applicationId "apps.dcoder.easysftp"
+        minSdkVersion 16
+        targetSdkVersion 29
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = 1.8
+        targetCompatibility = 1.8
+    }
+
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+
+    // Standard dependencies
+    implementation deps.support.app_compat
+    implementation deps.support.core_ktx
+    implementation deps.layout.constraint_layout
+
+    // Koin for Android
+    implementation deps.koin.view_model
+    testImplementation deps.koin.test
+
+    // Android components
+    implementation deps.recycler_view.main_lib
+    implementation deps.card_view.main_lib
+    implementation deps.support.design
+
+    // Arch components
+    implementation deps.lifecycle_kotlin.viewmodel
+    implementation deps.lifecycle_kotlin.extensions
+    implementation deps.lifecycle_kotlin.runtime
+
+    //Navigation
+    implementation deps.navigation.fragmentKTX
+    implementation deps.navigation.navigationUiKTX
+
+    // Jsch
+    implementation deps.jsch
+
+    // Testing
+    testImplementation deps.jUnit.core
+    androidTestImplementation deps.androidTest.ext
+    androidTestImplementation deps.espresso.core
+}
