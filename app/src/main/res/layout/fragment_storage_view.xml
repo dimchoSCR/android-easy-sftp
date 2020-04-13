@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".fragments.StorageViewFragment">
+
+    <ListView android:id="@+id/lvStorageTypes"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="@dimen/storage_view_margin"
+        android:layout_marginStart="@dimen/storage_view_margin"
+        android:layout_marginEnd="@dimen/storage_view_margin"
+        android:scrollbars="vertical"
+        android:splitMotionEvents="false"
+        android:divider="@android:color/transparent"
+        android:dividerHeight="5dp"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior" >
+
+    </ListView>
+
+</FrameLayout>
