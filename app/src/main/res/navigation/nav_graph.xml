@@ -7,7 +7,7 @@
 
     <fragment
         android:id="@+id/storageViewFragment"
-        android:name="apps.dcoder.easysftp.fragments.StorageViewFragment"
+        android:name="apps.dcoder.easysftp.fragments.StorageListFragment"
         android:label="fragment_storage_view"
         tools:layout="@layout/fragment_storage_view" />
 </navigation>

@@ -36,6 +36,7 @@ dependencies {
     // Standard dependencies
     implementation deps.support.app_compat
     implementation deps.support.core_ktx
+    implementation deps.support.prefs
     implementation deps.layout.constraint_layout
 
     // Koin for Android
@@ -51,6 +52,7 @@ dependencies {
     implementation deps.lifecycle_kotlin.viewmodel
     implementation deps.lifecycle_kotlin.extensions
     implementation deps.lifecycle_kotlin.runtime
+    implementation deps.lifecycle_kotlin.livedataExt
 
     //Navigation
     implementation deps.navigation.fragmentKTX
