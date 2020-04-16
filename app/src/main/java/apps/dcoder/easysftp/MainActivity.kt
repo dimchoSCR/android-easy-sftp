@@ -2,6 +2,7 @@ package apps.dcoder.easysftp
 
 import android.content.Intent
 import android.content.IntentFilter
+import android.hardware.usb.UsbManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import apps.dcoder.easysftp.broadcast.RemovableMediaStatusBroadcastReceiver
@@ -35,6 +36,7 @@ class MainActivity : AppCompatActivity() {
     private fun initializeEjectIntentFilter() {
         ejectedMediaIntentFilter.addAction(Intent.ACTION_MEDIA_UNMOUNTED)
         ejectedMediaIntentFilter.addAction(Intent.ACTION_MEDIA_MOUNTED)
+        ejectedMediaIntentFilter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED)
         ejectedMediaIntentFilter.addDataScheme(INTENT_FILTER_DATA_SCHEME);
     }
 

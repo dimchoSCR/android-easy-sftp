@@ -4,5 +4,5 @@ import apps.dcoder.easysftp.broadcast.RemovableMediaStatusBroadcastReceiver
 import org.koin.dsl.module
 
 val broadcastModule = module {
-    factory { RemovableMediaStatusBroadcastReceiver() }
+    factory { RemovableMediaStatusBroadcastReceiver(get()) }
 }

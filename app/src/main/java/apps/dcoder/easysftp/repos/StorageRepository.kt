@@ -1,11 +1,15 @@
 package apps.dcoder.easysftp.repos
 
 import android.util.Log
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import apps.dcoder.easysftp.R
 import apps.dcoder.easysftp.model.LocalStorageInfo
 import apps.dcoder.easysftp.model.StorageInfo
+import apps.dcoder.easysftp.services.storage.RemovableMediaState
 import apps.dcoder.easysftp.services.storage.SharedPrefsStorageService
 import apps.dcoder.easysftp.services.storage.StorageDiscoveryService
+import apps.dcoder.easysftp.services.storage.listeners.OnRemovableMediaStateChanged
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.koin.core.KoinComponent
@@ -16,7 +20,23 @@ class StorageRepository: KoinComponent {
     private val storageDiscoveryService: StorageDiscoveryService by inject()
     private val sharedPrefsStorageService: SharedPrefsStorageService by inject()
 
-    suspend fun getAllStorageOptions(): List<StorageInfo> = withContext(Dispatchers.Default) {
+    private var _storageOptionsLiveData = MutableLiveData<List<StorageInfo>>()
+
+    suspend fun getStorageOptionsLiveDataSource(): LiveData<List<StorageInfo>> {
+        getAllStorageOptions()
+        return _storageOptionsLiveData
+    }
+
+    suspend fun refreshStorageOptions(pathToMedia: String, mediaState: RemovableMediaState) {
+        // TODO use method parameters to remove and add storage options from cache
+        getAllStorageOptions()
+    }
+
+    fun listenForRemovableStorageStateChanges(onRemovableMediaStateChanged: OnRemovableMediaStateChanged) {
+        storageDiscoveryService.setOnRemovableMediaStateChangedListener(onRemovableMediaStateChanged)
+    }
+
+    private suspend fun getAllStorageOptions() = withContext(Dispatchers.Default) {
         try {
             // TODO get sftp server list from preferences
             val mountedVolumes = storageDiscoveryService.discoverMountedStorageVolumes()
@@ -39,12 +59,17 @@ class StorageRepository: KoinComponent {
                     isRemovable
                 ))
 
+                updateStorageOptionsLiveData(availableStorageList)
             }
 
-            return@withContext availableStorageList
+            updateStorageOptionsLiveData(availableStorageList)
         } catch (exc: NoSuchMethodException) {
-            Log.e(this.javaClass.simpleName, "Error while gathering info for storage!", exc)
-            return@withContext emptyList<StorageInfo>()
+            Log.e(this.javaClass.simpleName, "Error while gathering info for storage devices!", exc)
+            updateStorageOptionsLiveData(emptyList())
         }
+    }
+
+    private suspend fun updateStorageOptionsLiveData(data: List<StorageInfo>) = withContext(Dispatchers.Main) {
+        _storageOptionsLiveData.value = data
     }
 }
