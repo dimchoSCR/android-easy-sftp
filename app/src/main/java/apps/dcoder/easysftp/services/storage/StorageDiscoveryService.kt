@@ -41,7 +41,11 @@ class StorageDiscoveryService(private val appContext: Context) {
 
     fun discoverMountedStorageVolumes(): List<StorageVolume> {
         return discoverAllStorageVolumes().filter {
-            discoverVolumeState(it) == Environment.MEDIA_MOUNTED
+            if (isVolumeRemovable(it)) {
+                return@filter discoverVolumeState(it) == Environment.MEDIA_MOUNTED
+            }
+
+            return@filter true
         }
     }
 
