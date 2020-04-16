@@ -6,6 +6,8 @@ import androidx.lifecycle.MutableLiveData
 import apps.dcoder.easysftp.R
 import apps.dcoder.easysftp.model.LocalStorageInfo
 import apps.dcoder.easysftp.model.StorageInfo
+import apps.dcoder.easysftp.model.status.Resource
+import apps.dcoder.easysftp.model.status.Status
 import apps.dcoder.easysftp.services.storage.RemovableMediaState
 import apps.dcoder.easysftp.services.storage.SharedPrefsStorageService
 import apps.dcoder.easysftp.services.storage.StorageDiscoveryService
@@ -20,9 +22,9 @@ class StorageRepository: KoinComponent {
     private val storageDiscoveryService: StorageDiscoveryService by inject()
     private val sharedPrefsStorageService: SharedPrefsStorageService by inject()
 
-    private var _storageOptionsLiveData = MutableLiveData<List<StorageInfo>>()
+    private var _storageOptionsLiveData = MutableLiveData<Resource<List<StorageInfo>>>()
 
-    suspend fun getStorageOptionsLiveDataSource(): LiveData<List<StorageInfo>> {
+    suspend fun getStorageOptionsLiveDataSource(): LiveData<Resource<List<StorageInfo>>> {
         getAllStorageOptions()
         return _storageOptionsLiveData
     }
@@ -38,6 +40,8 @@ class StorageRepository: KoinComponent {
 
     private suspend fun getAllStorageOptions() = withContext(Dispatchers.Default) {
         try {
+            setLiveDataResource(_storageOptionsLiveData, Status.LOADING)
+
             // TODO get sftp server list from preferences
             val mountedVolumes = storageDiscoveryService.discoverMountedStorageVolumes()
 
@@ -58,18 +62,22 @@ class StorageRepository: KoinComponent {
                     imageResource,
                     isRemovable
                 ))
-
-                updateStorageOptionsLiveData(availableStorageList)
             }
 
-            updateStorageOptionsLiveData(availableStorageList)
+            setLiveDataResource(_storageOptionsLiveData, Status.SUCCESS, availableStorageList)
         } catch (exc: NoSuchMethodException) {
             Log.e(this.javaClass.simpleName, "Error while gathering info for storage devices!", exc)
-            updateStorageOptionsLiveData(emptyList())
+            setLiveDataResource(_storageOptionsLiveData, Status.ERROR, emptyList())
         }
     }
 
-    private suspend fun updateStorageOptionsLiveData(data: List<StorageInfo>) = withContext(Dispatchers.Main) {
-        _storageOptionsLiveData.value = data
+    private suspend fun<T> setLiveDataResource(liveData: MutableLiveData<Resource<T>>, status: Status, data: T? = null, message: String? = null) {
+        withContext(Dispatchers.Main) {
+            when (status) {
+                Status.LOADING -> liveData.value = Resource.loading(data)
+                Status.SUCCESS -> liveData.value = Resource.success(data)
+                Status.ERROR -> liveData.value = Resource.error(message ?: "", data)
+            }
+        }
     }
 }

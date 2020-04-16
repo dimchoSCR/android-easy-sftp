@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.liveData
 import androidx.lifecycle.viewModelScope
 import apps.dcoder.easysftp.model.StorageInfo
+import apps.dcoder.easysftp.model.status.Resource
 import apps.dcoder.easysftp.repos.StorageRepository
 import apps.dcoder.easysftp.services.storage.RemovableMediaState
 import apps.dcoder.easysftp.services.storage.listeners.OnRemovableMediaStateChanged
@@ -25,7 +26,7 @@ class StorageListViewModel: ViewModel(), KoinComponent {
         })
     }
 
-    val storageOptionsLiveData: LiveData<List<StorageInfo>> = liveData {
+    val storageOptionsLiveData: LiveData<Resource<List<StorageInfo>>> = liveData {
         emitSource(storageRepo.getStorageOptionsLiveDataSource())
     }
 }

@@ -17,7 +17,7 @@ class StorageEntryAdapter : BaseAdapter() {
 
         val rootView: View = convertView
             ?: LayoutInflater.from(parent.context)
-                .inflate(R.layout.rv_storage_ietem, parent, false)
+                .inflate(R.layout.rv_storage_item, parent, false)
 
         val ivStorageIcon = rootView.findViewById<ImageView>(R.id.imageView)
         val tvStorageText = rootView.findViewById<TextView>(R.id.info_text)

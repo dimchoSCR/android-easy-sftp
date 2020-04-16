@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import androidx.lifecycle.Observer
 import apps.dcoder.easysftp.R
 import apps.dcoder.easysftp.adapters.StorageEntryAdapter
+import apps.dcoder.easysftp.model.status.Status
 import apps.dcoder.easysftp.viewmodels.StorageListViewModel
 import kotlinx.android.synthetic.main.fragment_storage_view.view.*
 import org.koin.android.viewmodel.ext.android.viewModel
@@ -32,8 +33,12 @@ class StorageListFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        storageListViewModel.storageOptionsLiveData.observe(this.viewLifecycleOwner, Observer {
-            storageEntryAdapter.setStorageEntries(it)
+        storageListViewModel.storageOptionsLiveData.observe(this.viewLifecycleOwner, Observer { resource ->
+            when (resource.status) {
+                Status.LOADING -> {}
+                Status.SUCCESS -> resource.data?.let { storageEntryAdapter.setStorageEntries(it) }
+                Status.ERROR -> {}
+            }
         })
     }
 
