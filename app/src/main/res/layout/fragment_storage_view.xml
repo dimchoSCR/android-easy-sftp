@@ -16,7 +16,7 @@
         android:splitMotionEvents="false"
         android:divider="@android:color/transparent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
-        tools:listitem="@layout/rv_storage_ietm" >
+        tools:listitem="@layout/rv_storage_item" >
 
     </ListView>
 
