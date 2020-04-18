@@ -24,8 +24,7 @@ class StorageRepository: KoinComponent {
 
     private var _storageOptionsLiveData = MutableLiveData<Resource<List<StorageInfo>>>()
 
-    suspend fun getStorageOptionsLiveDataSource(): LiveData<Resource<List<StorageInfo>>> {
-        getAllStorageOptions()
+    fun getStorageOptionsLiveDataSource(): LiveData<Resource<List<StorageInfo>>> {
         return _storageOptionsLiveData
     }
 
@@ -38,7 +37,7 @@ class StorageRepository: KoinComponent {
         storageDiscoveryService.setOnRemovableMediaStateChangedListener(onRemovableMediaStateChanged)
     }
 
-    private suspend fun getAllStorageOptions() = withContext(Dispatchers.Default) {
+    suspend fun getAllStorageOptions() = withContext(Dispatchers.Default) {
         try {
             setLiveDataResource(_storageOptionsLiveData, Status.LOADING)
 
@@ -65,7 +64,7 @@ class StorageRepository: KoinComponent {
             }
 
             setLiveDataResource(_storageOptionsLiveData, Status.SUCCESS, availableStorageList)
-        } catch (exc: NoSuchMethodException) {
+        } catch (exc: Exception) {
             Log.e(this.javaClass.simpleName, "Error while gathering info for storage devices!", exc)
             setLiveDataResource(_storageOptionsLiveData, Status.ERROR, emptyList())
         }

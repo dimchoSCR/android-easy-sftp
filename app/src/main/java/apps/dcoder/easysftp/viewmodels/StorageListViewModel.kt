@@ -28,5 +28,6 @@ class StorageListViewModel: ViewModel(), KoinComponent {
 
     val storageOptionsLiveData: LiveData<Resource<List<StorageInfo>>> = liveData {
         emitSource(storageRepo.getStorageOptionsLiveDataSource())
+        storageRepo.getAllStorageOptions()
     }
 }

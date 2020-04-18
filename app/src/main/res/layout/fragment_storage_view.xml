@@ -6,18 +6,49 @@
     android:layout_height="match_parent"
     tools:context=".fragments.StorageListFragment">
 
-    <ListView android:id="@+id/lvStorageVolumes"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginTop="@dimen/storage_view_margin"
-        android:layout_marginLeft="@dimen/storage_view_margin"
-        android:layout_marginRight="@dimen/storage_view_margin"
-        android:scrollbars="vertical"
-        android:splitMotionEvents="false"
-        android:divider="@android:color/transparent"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior"
-        tools:listitem="@layout/rv_storage_item" >
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
-    </ListView>
+        <TextView android:id="@+id/tvError"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|center_horizontal"
+            android:layout_marginTop="@dimen/storage_view_margin"
+            android:gravity="center"
+            android:textColor="@color/colorError"
+            android:visibility="gone"
+            tools:text="Some error!" />
+
+        <ListView android:id="@+id/lvStorageVolumes"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="@dimen/storage_view_margin"
+            android:layout_marginLeft="@dimen/storage_view_margin"
+            android:layout_marginRight="@dimen/storage_view_margin"
+            android:scrollbars="vertical"
+            android:splitMotionEvents="false"
+            android:divider="@android:color/transparent"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior"
+            tools:listitem="@layout/rv_storage_item" >
+
+        </ListView>
+    </LinearLayout>
+
+    <ProgressBar android:id="@+id/pbLoading"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal|center_vertical"
+        android:visibility="gone" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAddSftpServer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/fab_margin"
+        app:elevation="@dimen/fab_elevation"
+        app:srcCompat="@drawable/ic_add_white_24dp" />
 
 </FrameLayout>

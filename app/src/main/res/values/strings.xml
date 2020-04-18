@@ -6,5 +6,6 @@
     <string name="removable_storage">Removable Storage</string>
     <string name="internal_storage">Phone Storage</string>
     <string name="storage_name_template">%1$s (%2$s)</string>
+    <string name="err_storage_not_loaded">Some storage options could not be loaded!</string>
 
 </resources>
