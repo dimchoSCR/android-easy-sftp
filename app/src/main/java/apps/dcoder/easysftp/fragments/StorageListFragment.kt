@@ -12,6 +12,7 @@ import apps.dcoder.easysftp.R
 import apps.dcoder.easysftp.adapters.StorageEntryAdapter
 import apps.dcoder.easysftp.model.status.Status
 import apps.dcoder.easysftp.viewmodels.StorageListViewModel
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import kotlinx.android.synthetic.main.fragment_storage_view.*
 import kotlinx.android.synthetic.main.fragment_storage_view.view.*
 import org.koin.android.viewmodel.ext.android.viewModel
@@ -49,17 +50,47 @@ class StorageListFragment : Fragment() {
                 }
 
                 Status.SUCCESS -> {
-                    mainHandler.removeCallbacks(progressRunnable)
-                    pbLoading.visibility = View.GONE
+                    hideProgressBar()
                     resource.data?.let { storageEntryAdapter.setStorageEntries(it) }
                 }
 
                 Status.ERROR -> {
+                    hideProgressBar()
                     tvError.visibility = View.VISIBLE
                     tvError.text = getString(R.string.err_storage_not_loaded)
                 }
             }
         })
+
+        initializeListeners()
     }
 
+    private fun hideProgressBar() {
+        mainHandler.removeCallbacks(progressRunnable)
+        pbLoading.visibility = View.GONE
+    }
+
+    private fun initializeListeners() {
+        val sftpBottomSheet = BottomSheetBehavior.from(bsAddSftpServer)
+        fabAddSftpServer.setOnClickListener {
+            if (sftpBottomSheet.state == BottomSheetBehavior.STATE_COLLAPSED ||
+                    sftpBottomSheet.state == BottomSheetBehavior.STATE_HIDDEN) {
+
+                sftpBottomSheet.state = BottomSheetBehavior.STATE_EXPANDED
+            }
+        }
+
+        sftpBottomSheet.setBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
+            override fun onSlide(p0: View, p1: Float) { }
+
+            override fun onStateChanged(sheet: View, newState: Int) {
+                when (newState) {
+                    BottomSheetBehavior.STATE_EXPANDED -> fabAddSftpServer.hide()
+                    BottomSheetBehavior.STATE_HIDDEN, BottomSheetBehavior.STATE_COLLAPSED -> fabAddSftpServer.show()
+                    else -> {  }
+                }
+            }
+
+        })
+    }
 }
