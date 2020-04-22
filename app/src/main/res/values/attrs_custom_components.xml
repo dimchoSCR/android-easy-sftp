@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="LabeledEditText">
+        <attr name="labelText" format="string" localization="suggested" />
+        <attr name="spacing" format="dimension" />
+        <attr name="hint" format="string" localization="suggested" />
+        <attr name="labelWidth" format="dimension" />
+    </declare-styleable>
+</resources>

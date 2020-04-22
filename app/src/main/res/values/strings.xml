@@ -7,5 +7,12 @@
     <string name="internal_storage">Phone Storage</string>
     <string name="storage_name_template">%1$s (%2$s)</string>
     <string name="err_storage_not_loaded">Some storage options could not be loaded!</string>
+    <string name="drag_handle_description">Drag handle. Drag to close opened sheet</string>
+    <string name="label_server">Server:</string>
+    <string name="server_auto_fill_hint">Server IP or IP/SFTP_export</string>
+    <string name="label_user">Username:</string>
+    <string name="label_display_name">Name:</string>
+    <string name="cancel">Cancel</string>
+    <string name="add">Add</string>
 
 </resources>

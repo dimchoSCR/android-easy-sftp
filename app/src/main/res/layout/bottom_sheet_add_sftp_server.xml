@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/betslipFragment"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@drawable/rounded_corners_top"
@@ -9,17 +9,82 @@
     android:fitsSystemWindows="true"
     android:clickable="true"
     android:focusable="true"
+    android:focusableInTouchMode="true"
+    android:padding="@dimen/bottom_sheet_content_padding"
     app:behavior_peekHeight="0dp"
     app:behavior_hideable="true"
     app:behavior_skipCollapsed="true"
     app:behavior_fitToContents="true"
     app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
 
-    <TextView
-        android:padding="50dp"
+    <ImageView
+        android:id="@+id/imgDragHandle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:text="Test content" />
+        android:contentDescription="@string/drag_handle_description"
+        android:layout_gravity="center_horizontal"
+        app:srcCompat="@drawable/ic_drag_handle_blue_24dp" />
+
+    <TextView
+        android:id="@+id/tvSheetTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/standard_space_margin_top"
+        android:gravity="center_horizontal"
+        android:text="Add SFTP Server"
+        style="@style/TitleStyle" />
+
+    <apps.dcoder.easysftp.custom.LabeledEditText
+        android:id="@+id/labeledEtServer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/content_space_margin_top"
+        app:labelText="@string/label_server"
+        app:hint="@string/server_auto_fill_hint"
+        app:spacing="@dimen/edit_text_margin_start"
+        app:labelWidth="@dimen/bottom_sheet_label_width" />
+
+    <apps.dcoder.easysftp.custom.LabeledEditText
+        android:id="@+id/labeledEtUser"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/labeled_edit_text_margin_top"
+        app:labelText="@string/label_user"
+        app:spacing="@dimen/edit_text_margin_start"
+        app:labelWidth="@dimen/bottom_sheet_label_width" />
+
+    <apps.dcoder.easysftp.custom.LabeledEditText
+        android:id="@+id/labeledEt"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/labeled_edit_text_margin_top"
+        app:labelText="@string/label_display_name"
+        app:hint="Display name"
+        app:spacing="@dimen/edit_text_margin_start"
+        app:labelWidth="@dimen/bottom_sheet_label_width" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" >
+
+        <Button
+            android:id="@+id/btnCancel"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/colored_button_height"
+            android:layout_gravity="start"
+            android:layout_marginTop="@dimen/standard_space_margin_top"
+            android:text="@string/cancel"
+            android:theme="@style/NegativeButton" />
+
+        <Button
+            android:id="@+id/btnAdd"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginTop="@dimen/standard_space_margin_top"
+            android:text="@string/add"
+            style="@style/PositiveButton" />
+
+    </FrameLayout>
 
 </LinearLayout>

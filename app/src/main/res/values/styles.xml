@@ -13,4 +13,25 @@
         <item name="android:textColorSecondary">@android:color/white</item>
     </style>
 
+    <style name="TitleStyle" parent="Widget.AppCompat.TextView">
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">20sp</item>
+    </style>
+
+    <style name="LabelStyle" parent="Widget.AppCompat.TextView">
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="EditTextStyle" parent="Widget.AppCompat.EditText">
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="NegativeButton" parent="Widget.AppCompat.Button.Colored">
+        <item name="colorButtonNormal">@color/colorError</item>
+        <item name="android:textColor">@android:color/white</item>
+    </style>
+
+    <style name="PositiveButton" parent="Widget.AppCompat.Button.Borderless.Colored">
+        <item name="android:minHeight">40dp</item>
+    </style>
 </resources>
