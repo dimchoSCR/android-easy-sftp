@@ -37,7 +37,7 @@
 
     <style name="SftpPropertyLabel">
         <item name="spacing">@dimen/margin_base_8</item>
-        <item name="labelWidth">@dimen/bottom_sheet_label_width</item>
+        <item name="labelWidth">@dimen/label_width</item>
     </style>
 
 </resources>
