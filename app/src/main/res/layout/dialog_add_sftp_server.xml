@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="@dimen/padding_base_6"
+    android:orientation="vertical"
+    android:fitsSystemWindows="true"
+    android:clickable="true"
+    android:focusable="true"
+    android:focusableInTouchMode="true" >
+
+    <TextView
+        android:id="@+id/tvSheetTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/margin_base_8"
+        android:gravity="center_horizontal"
+        tools:text="Add SFTP Server"
+        style="@style/TitleStyle" />
+
+    <apps.dcoder.easysftp.custom.LabeledEditText
+        android:id="@+id/labeledEtServer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/margin_base_6"
+        app:labelText="@string/label_server"
+        app:hint="@string/server_auto_fill_hint"
+        style="@style/SftpPropertyLabel" />
+
+    <apps.dcoder.easysftp.custom.LabeledEditText
+        android:id="@+id/labeledEtUser"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/labeled_edit_text_margin_top"
+        app:labelText="@string/label_user"
+        style="@style/SftpPropertyLabel" />
+
+    <apps.dcoder.easysftp.custom.LabeledEditText
+        android:id="@+id/labeledEt"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/labeled_edit_text_margin_top"
+        app:labelText="@string/label_display_name"
+        app:hint="Display name"
+        style="@style/SftpPropertyLabel" />
+
+</LinearLayout>

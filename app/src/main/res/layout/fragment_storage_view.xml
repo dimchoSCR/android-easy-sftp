@@ -34,6 +34,7 @@
             tools:listitem="@layout/rv_storage_item" >
 
         </ListView>
+
     </LinearLayout>
 
     <ProgressBar android:id="@+id/pbLoading"
@@ -50,8 +51,5 @@
         android:layout_margin="@dimen/fab_margin"
         app:elevation="@dimen/fab_elevation"
         app:srcCompat="@drawable/ic_add_white_24dp" />
-
-    <include layout="@layout/bottom_sheet_add_sftp_server"
-        android:id="@+id/bsAddSftpServer" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

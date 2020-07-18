@@ -34,4 +34,10 @@
     <style name="PositiveButton" parent="Widget.AppCompat.Button.Borderless.Colored">
         <item name="android:minHeight">40dp</item>
     </style>
+
+    <style name="SftpPropertyLabel">
+        <item name="spacing">@dimen/margin_base_8</item>
+        <item name="labelWidth">@dimen/bottom_sheet_label_width</item>
+    </style>
+
 </resources>
