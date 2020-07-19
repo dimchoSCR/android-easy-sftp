@@ -4,12 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="@dimen/padding_base_6"
-    android:orientation="vertical"
-    android:fitsSystemWindows="true"
-    android:clickable="true"
-    android:focusable="true"
-    android:focusableInTouchMode="true" >
+    android:padding="20dp"
+    android:orientation="vertical" >
 
     <TextView
         android:id="@+id/tvSheetTitle"
@@ -33,15 +29,15 @@
         android:id="@+id/labeledEtUser"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/labeled_edit_text_margin_top"
+        android:layout_marginTop="@dimen/margin_base_2"
         app:labelText="@string/label_user"
         style="@style/SftpPropertyLabel" />
 
     <apps.dcoder.easysftp.custom.LabeledEditText
-        android:id="@+id/labeledEt"
+        android:id="@+id/labeledEtName"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/labeled_edit_text_margin_top"
+        android:layout_marginTop="@dimen/margin_base_2"
         app:labelText="@string/label_display_name"
         app:hint="Display name"
         style="@style/SftpPropertyLabel" />

@@ -2,6 +2,8 @@ package apps.dcoder.easysftp.custom
 
 import android.content.Context
 import android.content.res.TypedArray
+import android.os.Bundle
+import android.os.Parcelable
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
@@ -13,14 +15,22 @@ import androidx.core.view.ViewCompat
 import apps.dcoder.easysftp.R
 import kotlinx.android.synthetic.main.view_labeled_edit_text.view.*
 
-class LabeledEditText(context: Context, private val attrs: AttributeSet): LinearLayout(context, attrs) {
+class LabeledEditText(context: Context, private val attrs: AttributeSet) : LinearLayout(context, attrs) {
 
     private val compoundLayout = inflateAndAttachCompoundLayout()
     private val label: TextView? = compoundLayout.label
     private val editText: EditText? = compoundLayout.editText
 
+    companion object {
+        private const val KEY_SUPER_STATE = "SuperState"
+        private const val KEY_EDIT_TEXT_STATE = "EditTextState"
+    }
+
     init {
         this.orientation = HORIZONTAL
+        this.isSaveEnabled = true
+        this.editText?.isSaveEnabled = false
+
         applyCustomAttributes()
     }
 
@@ -59,6 +69,25 @@ class LabeledEditText(context: Context, private val attrs: AttributeSet): Linear
             } else {
                 layoutParams.rightMargin = spacing
             }
+        }
+    }
+
+    override fun onSaveInstanceState(): Parcelable? {
+        val superComponentSate = super.onSaveInstanceState()
+
+        val savedState = Bundle()
+        savedState.putParcelable(KEY_SUPER_STATE, superComponentSate)
+        savedState.putString(KEY_EDIT_TEXT_STATE, editText?.text.toString())
+
+        return savedState
+    }
+
+    override fun onRestoreInstanceState(state: Parcelable?) {
+        val savedState = state as Bundle
+        super.onRestoreInstanceState(savedState.getParcelable(KEY_SUPER_STATE))
+
+        if (savedState.containsKey(KEY_EDIT_TEXT_STATE)) {
+            editText?.setText(savedState.getString(KEY_EDIT_TEXT_STATE))
         }
     }
 

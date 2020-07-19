@@ -7,6 +7,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.Observer
 import apps.dcoder.easysftp.R
 import apps.dcoder.easysftp.adapters.StorageEntryAdapter
@@ -16,7 +17,7 @@ import kotlinx.android.synthetic.main.fragment_storage_view.*
 import kotlinx.android.synthetic.main.fragment_storage_view.view.*
 import org.koin.android.viewmodel.ext.android.viewModel
 
-class StorageListFragment : Fragment() {
+class StorageListFragment : Fragment(), StorageAddDialogFragment.StorageAddDialogListener {
 
     private val storageListViewModel: StorageListViewModel by viewModel()
 
@@ -26,6 +27,7 @@ class StorageListFragment : Fragment() {
 
     companion object {
         private const val DISPLAY_DELAY_LOADING_INDICATOR = 160L
+        private const val TAG_ADD_SFTP_STORAGE_DIALOG = "AddSFTPStorage"
     }
 
     override fun onCreateView(
@@ -33,14 +35,14 @@ class StorageListFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        val view =  inflater.inflate(R.layout.fragment_storage_view, container, false)
+        val view = inflater.inflate(R.layout.fragment_storage_view, container, false)
         view.lvStorageVolumes.adapter = storageEntryAdapter
 
         return view
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+//        super.onViewCreated(view, savedInstanceState)
 
         storageListViewModel.storageOptionsLiveData.observe(this.viewLifecycleOwner, Observer { resource ->
             when (resource.status) {
@@ -71,7 +73,16 @@ class StorageListFragment : Fragment() {
 
     private fun initializeListeners() {
         fabAddSftpServer.setOnClickListener {
-
+            val addSftpStorageDialog = StorageAddDialogFragment()
+            addSftpStorageDialog.show(childFragmentManager, TAG_ADD_SFTP_STORAGE_DIALOG)
         }
+    }
+
+    override fun onDialogPositiveClick(dialog: DialogFragment) {
+
+    }
+
+    override fun onDialogNegativeClick(dialog: DialogFragment) {
+
     }
 }
