@@ -1,9 +1,11 @@
 package apps.dcoder.easysftp.viewmodels
 
+import android.os.Bundle
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.liveData
 import androidx.lifecycle.viewModelScope
+import apps.dcoder.easysftp.fragments.StorageAddDialogFragment
 import apps.dcoder.easysftp.model.StorageInfo
 import apps.dcoder.easysftp.model.status.Resource
 import apps.dcoder.easysftp.repos.StorageRepository
@@ -13,7 +15,7 @@ import kotlinx.coroutines.launch
 import org.koin.core.KoinComponent
 import org.koin.core.inject
 
-class StorageListViewModel: ViewModel(), KoinComponent {
+class StorageListViewModelAction : ViewModel(), KoinComponent, StorageAddDialogFragment.DialogActionListener {
     private val storageRepo: StorageRepository by inject()
 
     init {
@@ -29,5 +31,13 @@ class StorageListViewModel: ViewModel(), KoinComponent {
     val storageOptionsLiveData: LiveData<Resource<List<StorageInfo>>> = liveData {
         emitSource(storageRepo.getStorageOptionsLiveDataSource())
         storageRepo.getAllStorageOptions()
+    }
+
+    override fun onDialogPositiveClick(result: Bundle) {
+
+    }
+
+    override fun onDialogNegativeClick() {
+
     }
 }
