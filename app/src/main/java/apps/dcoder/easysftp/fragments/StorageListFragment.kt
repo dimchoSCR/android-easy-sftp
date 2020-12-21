@@ -1,5 +1,6 @@
 package apps.dcoder.easysftp.fragments
 
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -7,19 +8,30 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.fragment.app.DialogFragment
+import androidx.appcompat.content.res.AppCompatResources
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.Observer
+import androidx.lifecycle.lifecycleScope
 import apps.dcoder.easysftp.R
 import apps.dcoder.easysftp.adapters.StorageEntryAdapter
+import apps.dcoder.easysftp.model.LocalStorageInfo
+import apps.dcoder.easysftp.model.RemoteStorageInfo
+import apps.dcoder.easysftp.model.StorageInfo
+import apps.dcoder.easysftp.model.androidModel.AdaptableLocalStorageInfo
+import apps.dcoder.easysftp.model.androidModel.AdaptableRemoteStorageInfo
+import apps.dcoder.easysftp.model.androidModel.AdaptableStorageInfo
 import apps.dcoder.easysftp.model.status.Status
 import apps.dcoder.easysftp.viewmodels.StorageListViewModel
 import kotlinx.android.synthetic.main.fragment_storage_view.*
 import kotlinx.android.synthetic.main.fragment_storage_view.view.*
+import org.koin.android.ext.android.inject
 import org.koin.android.viewmodel.ext.android.viewModel
 
-class StorageListFragment : Fragment(), StorageAddDialogFragment.StorageAddDialogListener {
+class StorageListFragment : Fragment() {
 
     private val storageListViewModel: StorageListViewModel by viewModel()
+    private val storageAddDialogFragment: StorageAddDialogFragment by inject()
 
     private val storageEntryAdapter = StorageEntryAdapter()
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -42,7 +54,7 @@ class StorageListFragment : Fragment(), StorageAddDialogFragment.StorageAddDialo
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-//        super.onViewCreated(view, savedInstanceState)
+        super.onViewCreated(view, savedInstanceState)
 
         storageListViewModel.storageOptionsLiveData.observe(this.viewLifecycleOwner, Observer { resource ->
             when (resource.status) {
@@ -52,7 +64,11 @@ class StorageListFragment : Fragment(), StorageAddDialogFragment.StorageAddDialo
 
                 Status.SUCCESS -> {
                     hideProgressBar()
-                    resource.data?.let { storageEntryAdapter.setStorageEntries(it) }
+                    if (resource.data != null) {
+                        storageEntryAdapter.setStorageEntries(convertToAdaptableStorageEntries(resource.data))
+                    } else {
+                        // TODO Show error message
+                    }
                 }
 
                 Status.ERROR -> {
@@ -71,18 +87,36 @@ class StorageListFragment : Fragment(), StorageAddDialogFragment.StorageAddDialo
         pbLoading.visibility = View.GONE
     }
 
+    private fun convertToAdaptableStorageEntries(storageEntries: List<StorageInfo>): List<AdaptableStorageInfo> {
+        val adaptableStorageInfos = mutableListOf<AdaptableStorageInfo>()
+
+        for (storageEntry in storageEntries) {
+            when (storageEntry) {
+                is LocalStorageInfo -> {
+                    val (nameResource, storageIcon) = if (storageEntry.isRemovable) {
+                        getString(R.string.removable_storage) to R.drawable.ic_sd_storage_black_24dp
+                    } else {
+                        getString(R.string.internal_storage) to R.drawable.ic_storage_black_24dp
+                    }
+
+                    val adaptableStorageInfo = AdaptableLocalStorageInfo.fromLocalStorageInfo(storageEntry, nameResource, storageIcon)
+                    adaptableStorageInfos.add(adaptableStorageInfo)
+                }
+
+                is RemoteStorageInfo -> {
+                    val adaptableStorageInfo = AdaptableRemoteStorageInfo.fromRemoteStorageInfo(storageEntry, R.drawable.ic_storage_black_24dp)
+                    adaptableStorageInfos.add(adaptableStorageInfo)
+                }
+            }
+        }
+
+        return adaptableStorageInfos
+    }
+
     private fun initializeListeners() {
         fabAddSftpServer.setOnClickListener {
-            val addSftpStorageDialog = StorageAddDialogFragment()
-            addSftpStorageDialog.show(childFragmentManager, TAG_ADD_SFTP_STORAGE_DIALOG)
+            storageAddDialogFragment.show(childFragmentManager, TAG_ADD_SFTP_STORAGE_DIALOG)
         }
     }
 
-    override fun onDialogPositiveClick(dialog: DialogFragment) {
-
-    }
-
-    override fun onDialogNegativeClick(dialog: DialogFragment) {
-
-    }
 }

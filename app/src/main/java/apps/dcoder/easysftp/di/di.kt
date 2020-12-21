@@ -1,9 +1,7 @@
 package apps.dcoder.easysftp.di
 
-import apps.dcoder.easysftp.di.modules.broadcastModule
-import apps.dcoder.easysftp.di.modules.repoModule
-import apps.dcoder.easysftp.di.modules.serviceModule
-import apps.dcoder.easysftp.di.modules.viewModelsModule
+import apps.dcoder.easysftp.di.modules.*
 
-val allModules = listOf(serviceModule, viewModelsModule, repoModule, broadcastModule)
+val allModules = listOf(serviceModule, viewModelsModule, repoModule,
+    broadcastModule, componentsModule)
 

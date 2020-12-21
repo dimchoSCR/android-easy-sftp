@@ -91,4 +91,8 @@ class LabeledEditText(context: Context, private val attrs: AttributeSet) : Linea
         }
     }
 
+    fun getText(): String? {
+        return editText?.text?.toString()
+    }
+
 }

@@ -7,11 +7,13 @@ import android.widget.BaseAdapter
 import android.widget.ImageView
 import android.widget.TextView
 import apps.dcoder.easysftp.R
-import apps.dcoder.easysftp.model.StorageInfo
+import apps.dcoder.easysftp.model.androidModel.AdaptableLocalStorageInfo
+import apps.dcoder.easysftp.model.androidModel.AdaptableRemoteStorageInfo
+import apps.dcoder.easysftp.model.androidModel.AdaptableStorageInfo
 
 class StorageEntryAdapter : BaseAdapter() {
 
-    private val storageItems: MutableList<StorageInfo> = mutableListOf()
+    private val storageItems: MutableList<AdaptableStorageInfo> = mutableListOf()
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
 
@@ -21,20 +23,25 @@ class StorageEntryAdapter : BaseAdapter() {
 
         val ivStorageIcon = rootView.findViewById<ImageView>(R.id.imageView)
         val tvStorageText = rootView.findViewById<TextView>(R.id.info_text)
-        val storageInfo: StorageInfo = getItem(position)
+        val storageInfo: AdaptableStorageInfo = getItem(position)
 
-        ivStorageIcon.setImageResource(storageInfo.storageIconResource)
-        val translatableStorageLabel = rootView.resources.getString(storageInfo.storageNameResID)
-        tvStorageText.text = rootView.resources.getString(R.string.storage_name_template,
-            translatableStorageLabel,
-            storageInfo.description
-        )
+        ivStorageIcon.setImageResource(storageInfo.storageIconRes)
+        val translatableStorageLabel = storageInfo
+        when (storageInfo) {
+            is AdaptableLocalStorageInfo -> {
+                tvStorageText.text = storageInfo.storageName
+            }
+
+            is AdaptableRemoteStorageInfo -> {
+                tvStorageText.text = storageInfo.name
+            }
+        }
 
         return rootView
 
     }
 
-    override fun getItem(position: Int): StorageInfo {
+    override fun getItem(position: Int): AdaptableStorageInfo {
         return storageItems[position]
     }
 
@@ -46,7 +53,7 @@ class StorageEntryAdapter : BaseAdapter() {
         return storageItems.size
     }
 
-    fun setStorageEntries(storageEntries: List<StorageInfo>) {
+    fun setStorageEntries(storageEntries: List<AdaptableStorageInfo>) {
         storageItems.clear()
         storageItems.addAll(storageEntries)
 

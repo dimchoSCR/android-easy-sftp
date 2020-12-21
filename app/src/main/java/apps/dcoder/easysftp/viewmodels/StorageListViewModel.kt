@@ -11,11 +11,14 @@ import apps.dcoder.easysftp.model.status.Resource
 import apps.dcoder.easysftp.repos.StorageRepository
 import apps.dcoder.easysftp.services.storage.RemovableMediaState
 import apps.dcoder.easysftp.services.storage.listeners.OnRemovableMediaStateChanged
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.core.KoinComponent
 import org.koin.core.inject
+import java.lang.IllegalStateException
 
-class StorageListViewModelAction : ViewModel(), KoinComponent, StorageAddDialogFragment.DialogActionListener {
+class StorageListViewModel : ViewModel(), KoinComponent, StorageAddDialogFragment.DialogActionListener {
     private val storageRepo: StorageRepository by inject()
 
     init {
@@ -34,10 +37,13 @@ class StorageListViewModelAction : ViewModel(), KoinComponent, StorageAddDialogF
     }
 
     override fun onDialogPositiveClick(result: Bundle) {
+        val storageDetailsArr = result.getStringArray(StorageAddDialogFragment.KEY_STORAGE_DATA)
+            ?: throw IllegalStateException("Missing data for key KEY_STORAGE_DATA")
 
-    }
+        val serverIp = storageDetailsArr[0]
+        val user = storageDetailsArr[1]
+        val name = storageDetailsArr[2]
 
-    override fun onDialogNegativeClick() {
-
+        storageRepo.addStorageOption(serverIp, user, name)
     }
 }

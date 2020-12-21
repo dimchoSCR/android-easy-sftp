@@ -5,30 +5,35 @@ import android.os.Bundle
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
 import apps.dcoder.easysftp.R
-import java.lang.ClassCastException
+import kotlinx.android.synthetic.main.dialog_add_sftp_server.*
 
-class StorageAddDialogFragment : DialogFragment() {
+class StorageAddDialogFragment(private val dialogClickActionListener: DialogActionListener) : DialogFragment() {
+
+    companion object {
+        const val KEY_STORAGE_DATA = "STORAGE_DATA"
+    }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-
         val inflater = requireActivity().layoutInflater
-        val dialogClickListener = requireParentFragment() as? StorageAddDialogListener
-            ?: throw ClassCastException("Dialog host must implement the StorageAddDialogListener interface!")
 
         return AlertDialog.Builder(requireContext())
             .setView(inflater.inflate(R.layout.dialog_add_sftp_server, null))
             .setPositiveButton(R.string.add) { _, _ ->
-                dialogClickListener.onDialogPositiveClick(this)
+                val bundle = Bundle()
+                val dataArr = arrayOf(dialog!!.labeledEtServer.getText(), dialog!!.labeledEtUser.getText(), dialog!!.labeledEtName.getText())
+
+                bundle.putStringArray(KEY_STORAGE_DATA, dataArr)
+                dialogClickActionListener.onDialogPositiveClick(bundle)
             }
             .setNegativeButton(R.string.cancel) { _, _ ->
-                dialogClickListener.onDialogNegativeClick(this)
+                dialogClickActionListener.onDialogNegativeClick()
             }
             .create()
-
     }
 
-    interface StorageAddDialogListener {
-        fun onDialogPositiveClick(dialog: DialogFragment)
-        fun onDialogNegativeClick(dialog: DialogFragment)
+    interface DialogActionListener {
+        fun onDialogPositiveClick(result : Bundle)
+        fun onDialogNegativeClick() { }
     }
+
 }
