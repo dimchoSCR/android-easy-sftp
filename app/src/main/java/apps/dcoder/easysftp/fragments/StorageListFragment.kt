@@ -1,18 +1,14 @@
 package apps.dcoder.easysftp.fragments
 
-import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.content.res.AppCompatResources
-import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.toBitmap
-import androidx.lifecycle.Observer
-import androidx.lifecycle.lifecycleScope
+import android.widget.PopupMenu
 import apps.dcoder.easysftp.R
 import apps.dcoder.easysftp.adapters.StorageEntryAdapter
 import apps.dcoder.easysftp.model.LocalStorageInfo
@@ -26,7 +22,8 @@ import apps.dcoder.easysftp.viewmodels.StorageListViewModel
 import kotlinx.android.synthetic.main.fragment_storage_view.*
 import kotlinx.android.synthetic.main.fragment_storage_view.view.*
 import org.koin.android.ext.android.inject
-import org.koin.android.viewmodel.ext.android.viewModel
+import org.koin.androidx.viewmodel.ext.android.viewModel
+import kotlin.math.abs
 
 class StorageListFragment : Fragment() {
 
@@ -56,7 +53,7 @@ class StorageListFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        storageListViewModel.storageOptionsLiveData.observe(this.viewLifecycleOwner, Observer { resource ->
+        storageListViewModel.storageOptionsLiveData.observe(this.viewLifecycleOwner, { resource ->
             when (resource.status) {
                 Status.LOADING -> {
                     mainHandler.postDelayed(progressRunnable, DISPLAY_DELAY_LOADING_INDICATOR)
@@ -65,9 +62,26 @@ class StorageListFragment : Fragment() {
                 Status.SUCCESS -> {
                     hideProgressBar()
                     if (resource.data != null) {
-                        storageEntryAdapter.setStorageEntries(convertToAdaptableStorageEntries(resource.data))
+                        val adaptableStorageEntries = convertToAdaptableStorageEntries(resource.data)
+                        if (storageEntryAdapter.itemCount == 0) {
+                            storageEntryAdapter.setStorageEntries(adaptableStorageEntries)
+                        } else {
+                            // Inserting items
+                            val itemSizeDelta = adaptableStorageEntries.size - storageEntryAdapter.itemCount
+                            if (itemSizeDelta > 0) {
+                                storageEntryAdapter.insertStorageEntries(
+                                    adaptableStorageEntries,
+                                    storageEntryAdapter.itemCount,
+                                    itemSizeDelta
+                                )
+                            } else {
+                                resource.payload?.let {
+                                    storageEntryAdapter.deleteStorageEntry(it)
+                                }
+                            }
+                        }
                     } else {
-                        // TODO Show error message
+                       Log.e(this::class.java.simpleName, "Storage list should not be null")
                     }
                 }
 
@@ -116,6 +130,27 @@ class StorageListFragment : Fragment() {
     private fun initializeListeners() {
         fabAddSftpServer.setOnClickListener {
             storageAddDialogFragment.show(childFragmentManager, TAG_ADD_SFTP_STORAGE_DIALOG)
+        }
+
+        storageEntryAdapter.onItemClickListener = { position ->
+
+        }
+
+        storageEntryAdapter.onItemLongClickListener = { position, view ->
+            val adaptableItem = storageEntryAdapter.getItem(position)
+            if (adaptableItem is AdaptableRemoteStorageInfo) {
+                val popupMenu = PopupMenu(requireContext(), view)
+                popupMenu.inflate(R.menu.storage_popup_menu)
+                popupMenu.show()
+
+                popupMenu.setOnMenuItemClickListener {
+                    if (it.itemId == R.id.menu_delete) {
+                        storageListViewModel.removeRemoteStorageItem(adaptableItem.ip)
+                    }
+
+                    true
+                }
+            }
         }
     }
 

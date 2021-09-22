@@ -3,12 +3,12 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 
 android {
-    compileSdkVersion 29
+    compileSdkVersion 30
 
     defaultConfig {
         applicationId "apps.dcoder.easysftp"
         minSdkVersion 16
-        targetSdkVersion 29
+        targetSdkVersion 30
         versionCode 1
         versionName "1.0"
 
@@ -27,12 +27,13 @@ android {
         sourceCompatibility = 1.8
         targetCompatibility = 1.8
     }
+    buildToolsVersion '30.0.3'
 
 }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 
     // Standard dependencies
     implementation deps.support.app_compat
@@ -41,7 +42,8 @@ dependencies {
     implementation deps.layout.constraint_layout
 
     // Koin for Android
-    implementation deps.koin.view_model
+    implementation deps.koin.android
+    implementation deps.koin.compat
     testImplementation deps.koin.test
 
     // Android components
@@ -51,11 +53,10 @@ dependencies {
 
     // Arch components
     implementation deps.lifecycle_kotlin.viewmodel
-    implementation deps.lifecycle_kotlin.extensions
     implementation deps.lifecycle_kotlin.runtime
     implementation deps.lifecycle_kotlin.livedataExt
 
-    //Navigation
+    // Navigation
     implementation deps.navigation.fragmentKTX
     implementation deps.navigation.navigationUiKTX
 

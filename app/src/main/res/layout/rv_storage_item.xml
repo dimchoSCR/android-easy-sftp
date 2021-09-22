@@ -4,18 +4,32 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="@dimen/storage_card_height"
+    android:layout_height="wrap_content"
     android:clickable="true"
     android:focusable="true"
     android:foreground="?android:attr/selectableItemBackground"
     app:cardCornerRadius="@dimen/card_corner_radius"
-    app:contentPaddingRight="@dimen/card_padding_left_right"
-    app:contentPaddingLeft="@dimen/card_padding_left_right"
+    app:contentPadding="@dimen/card_padding"
     app:cardUseCompatPadding="true" >
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent" >
+
+        <TextView
+            android:id="@+id/info_text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/storage_view_label_margins"
+            android:layout_marginLeft="@dimen/storage_view_label_margins"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/imageView"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="Internal storage" />
 
         <ImageView
             android:id="@+id/imageView"
@@ -25,28 +39,22 @@
             android:layout_marginLeft="@dimen/storage_view_image_margin_left_right"
             android:layout_marginTop="@dimen/storage_view_image_margin_top_bottom"
             android:layout_marginBottom="@dimen/storage_view_image_margin_top_bottom"
-            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintBottom_toBottomOf="@+id/tvDetails"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/info_text"
             tools:src="@drawable/ic_storage_black_24dp" />
 
         <TextView
-            android:id="@+id/info_text"
+            android:id="@+id/tvDetails"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/storage_view_label_margins"
-            android:layout_marginLeft="@dimen/storage_view_label_margins"
-            android:layout_marginEnd="@dimen/storage_view_label_margins"
-            android:layout_marginRight="@dimen/storage_view_label_margins"
             android:ellipsize="end"
             android:maxLines="1"
-            android:textSize="15sp"
-            app:layout_constraintBottom_toBottomOf="@+id/imageView"
+            android:layout_marginTop="@dimen/margin_base_2"
+            app:layout_constraintTop_toBottomOf="@+id/info_text"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
-            app:layout_constraintStart_toEndOf="@+id/imageView"
-            app:layout_constraintTop_toTopOf="@+id/imageView"
-            tools:text="Internal storage" />
+            app:layout_constraintStart_toStartOf="@+id/info_text"
+            tools:text="Some details" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>

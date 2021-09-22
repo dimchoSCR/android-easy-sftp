@@ -4,5 +4,5 @@ import apps.dcoder.easysftp.repos.StorageRepository
 import org.koin.dsl.module
 
 val repoModule = module {
-    single { StorageRepository() }
+    single { StorageRepository(get(), get()) }
 }

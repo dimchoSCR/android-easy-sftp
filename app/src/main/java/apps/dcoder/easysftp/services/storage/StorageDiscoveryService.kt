@@ -6,6 +6,7 @@ import android.os.Environment
 import android.os.storage.StorageManager
 import android.os.storage.StorageVolume
 import apps.dcoder.easysftp.services.storage.listeners.OnRemovableMediaStateChanged
+import java.io.File
 import java.lang.reflect.Method
 
 class StorageDiscoveryService(private val appContext: Context) {
@@ -14,7 +15,7 @@ class StorageDiscoveryService(private val appContext: Context) {
 
     companion object {
         private const val STORAGE_MANAGER_GET_VOLUMES_METHOD_NAME = "getVolumeList"
-        private const val VOLUME_GET_PATH_METHOD_NAME = "getPath"
+        private const val VOLUME_GET_PATH_METHOD_NAME = "getDirectory"
         private const val VOLUME_GET_DESCRIPTION_METHOD_NAME = "getDescription"
         private const val VOLUME_GET_STATE_METHOD_NAME = "getState"
         private const val VOLUME_IS_REMOVABLE_METHOD_NAME = "isRemovable"
@@ -50,8 +51,8 @@ class StorageDiscoveryService(private val appContext: Context) {
     }
 
     fun discoverVolumePath(storageVolume: StorageVolume): String {
-        return getMethodFromObject(storageVolume, VOLUME_GET_PATH_METHOD_NAME)
-            .invoke(storageVolume) as String
+        return (getMethodFromObject(storageVolume, VOLUME_GET_PATH_METHOD_NAME)
+            .invoke(storageVolume) as File).absolutePath
     }
 
     fun discoverVolumeDescription(storageVolume: StorageVolume): String {

@@ -4,10 +4,9 @@
     <dimen name="storage_view_image_width_height">26dp</dimen>
     <dimen name="storage_view_image_margin_left_right">8dp</dimen>
     <dimen name="storage_view_image_margin_top_bottom">2dp</dimen>
-    <dimen name="storage_view_label_margins">8dp</dimen>
-    <dimen name="storage_card_height">60dp</dimen>
-    <dimen name="card_corner_radius">8dp</dimen>
-    <dimen name="card_padding_left_right">10dp</dimen>
+    <dimen name="storage_view_label_margins">16dp</dimen>
+    <dimen name="card_corner_radius">6dp</dimen>
+    <dimen name="card_padding">8dp</dimen>
     <dimen name="fab_margin">16dp</dimen>
     <dimen name="fab_elevation">5dp</dimen>
     <dimen name="top_right_left_corner_radius">10dp</dimen>

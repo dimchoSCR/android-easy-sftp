@@ -21,7 +21,7 @@
             android:visibility="gone"
             tools:text="Some error!" />
 
-        <ListView android:id="@+id/lvStorageVolumes"
+        <androidx.recyclerview.widget.RecyclerView android:id="@+id/lvStorageVolumes"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_marginTop="@dimen/storage_view_margin"
@@ -30,10 +30,11 @@
             android:scrollbars="vertical"
             android:splitMotionEvents="false"
             android:divider="@android:color/transparent"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
             app:layout_behavior="@string/appbar_scrolling_view_behavior"
             tools:listitem="@layout/rv_storage_item" >
 
-        </ListView>
+        </androidx.recyclerview.widget.RecyclerView>
 
     </LinearLayout>
 
