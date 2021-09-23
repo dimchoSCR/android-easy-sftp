@@ -1,17 +1,16 @@
 package apps.dcoder.easysftp.repos
 
 import android.util.Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import apps.dcoder.easysftp.extensions.*
 import apps.dcoder.easysftp.model.LocalStorageInfo
 import apps.dcoder.easysftp.model.RemoteStorageInfo
 import apps.dcoder.easysftp.model.StorageInfo
-import apps.dcoder.easysftp.model.status.Resource
 import apps.dcoder.easysftp.services.storage.RemovableMediaState
 import apps.dcoder.easysftp.services.storage.SharedPrefsStorageService
 import apps.dcoder.easysftp.services.storage.StorageDiscoveryService
 import apps.dcoder.easysftp.services.storage.listeners.OnRemovableMediaStateChanged
+import apps.dcoder.easysftp.util.LiveResource
+import apps.dcoder.easysftp.util.MutableLiveResource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -19,10 +18,10 @@ class StorageRepository(
     private val storageDiscoveryService: StorageDiscoveryService,
     private val sharedPrefsStorageService: SharedPrefsStorageService
 ) {
-    private var _storageOptionsLiveData = MutableLiveData<Resource<List<StorageInfo>, Int>>()
+    private var _storageOptionsLiveData = MutableLiveResource<List<StorageInfo>, Int>()
     private val cachedStorageInfo = mutableListOf<StorageInfo>()
 
-    fun getStorageOptionsLiveDataSource(): LiveData<Resource<List<StorageInfo>, Int>> {
+    fun getStorageOptionsLiveDataSource(): LiveResource<List<StorageInfo>, Int> {
         return _storageOptionsLiveData
     }
 
@@ -41,11 +40,10 @@ class StorageRepository(
 
             val availableStorageList = mutableListOf<StorageInfo>()
 
-            // Display local storage options first
+            // Load local storage options first
             availableStorageList.addAll(getLocalStorageOptions())
-            _storageOptionsLiveData.dispatchSuccessOnMain(availableStorageList)
 
-            // Display remote storage options from shared prefs
+            // Load remote storage options from shared prefs
             availableStorageList.addAll(getRemoteStorageOptions())
             cachedStorageInfo.addAll(availableStorageList)
             _storageOptionsLiveData.dispatchSuccessOnMain(availableStorageList)
