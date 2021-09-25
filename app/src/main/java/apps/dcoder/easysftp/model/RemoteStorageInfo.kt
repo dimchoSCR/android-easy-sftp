@@ -6,5 +6,6 @@ data class RemoteStorageInfo(
     override val description: String,
     val name: String,
     val userName: String,
-    val ip: String
+    val ip: String,
+    val position: Int
 ) : StorageInfo()

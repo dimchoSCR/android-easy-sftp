@@ -62,23 +62,7 @@ class StorageListFragment : Fragment() {
                     hideProgressBar()
                     if (resource.data != null) {
                         val adaptableStorageEntries = convertToAdaptableStorageEntries(resource.data)
-                        if (storageEntryAdapter.itemCount == 0) {
-                            storageEntryAdapter.setStorageEntries(adaptableStorageEntries)
-                        } else {
-                            // Inserting items
-                            val itemSizeDelta = adaptableStorageEntries.size - storageEntryAdapter.itemCount
-                            if (itemSizeDelta > 0) {
-                                storageEntryAdapter.insertStorageEntries(
-                                    adaptableStorageEntries,
-                                    storageEntryAdapter.itemCount,
-                                    itemSizeDelta
-                                )
-                            } else {
-                                resource.payload?.let {
-                                    storageEntryAdapter.deleteStorageEntry(it)
-                                }
-                            }
-                        }
+                        storageListViewModel.calculateDiff(storageEntryAdapter.getAdaptedItems(), adaptableStorageEntries)
                     } else {
                        Log.e(this::class.java.simpleName, "Storage list should not be null")
                     }
@@ -90,6 +74,10 @@ class StorageListFragment : Fragment() {
                     tvError.text = getString(R.string.err_storage_not_loaded)
                 }
             }
+        })
+
+        storageListViewModel.diffCompleteLiveData.observe(this.viewLifecycleOwner, {
+            storageEntryAdapter.updateStorageEntries(it.first, it.second)
         })
 
         initializeListeners()

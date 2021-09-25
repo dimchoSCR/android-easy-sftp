@@ -1,5 +1,6 @@
 package apps.dcoder.easysftp.services.storage
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
 import android.os.Environment
@@ -15,7 +16,7 @@ class StorageDiscoveryService(private val appContext: Context) {
 
     companion object {
         private const val STORAGE_MANAGER_GET_VOLUMES_METHOD_NAME = "getVolumeList"
-        private const val VOLUME_GET_PATH_METHOD_NAME = "getDirectory"
+        private const val VOLUME_GET_PATH_METHOD_NAME = "getPathFile"
         private const val VOLUME_GET_DESCRIPTION_METHOD_NAME = "getDescription"
         private const val VOLUME_GET_STATE_METHOD_NAME = "getState"
         private const val VOLUME_IS_REMOVABLE_METHOD_NAME = "isRemovable"
@@ -50,9 +51,12 @@ class StorageDiscoveryService(private val appContext: Context) {
         }
     }
 
+    @SuppressLint("DiscouragedPrivateApi")
     fun discoverVolumePath(storageVolume: StorageVolume): String {
-        return (getMethodFromObject(storageVolume, VOLUME_GET_PATH_METHOD_NAME)
-            .invoke(storageVolume) as File).absolutePath
+        val pathFile = storageVolume.javaClass.getDeclaredField("mPath")
+        pathFile.isAccessible = true
+
+        return (pathFile.get(storageVolume) as File).absolutePath
     }
 
     fun discoverVolumeDescription(storageVolume: StorageVolume): String {

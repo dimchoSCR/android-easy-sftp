@@ -18,16 +18,29 @@ class StorageRepository(
     private val storageDiscoveryService: StorageDiscoveryService,
     private val sharedPrefsStorageService: SharedPrefsStorageService
 ) {
-    private var _storageOptionsLiveData = MutableLiveResource<List<StorageInfo>, Int>()
+    private var _storageOptionsLiveData = MutableLiveResource<List<StorageInfo>>()
     private val cachedStorageInfo = mutableListOf<StorageInfo>()
 
-    fun getStorageOptionsLiveDataSource(): LiveResource<List<StorageInfo>, Int> {
+    fun getStorageOptionsLiveDataSource(): LiveResource<List<StorageInfo>> {
         return _storageOptionsLiveData
     }
 
     suspend fun refreshStorageOptions(pathToMedia: String, mediaState: RemovableMediaState) {
-        // TODO use method parameters to remove and add external storage options from cache
-        getAllStorageOptions()
+        withContext(Dispatchers.IO) {
+            if (mediaState == RemovableMediaState.UNMOUNTED) {
+                for (i in 0 until cachedStorageInfo.size) {
+                    if (cachedStorageInfo[i].volumePath == pathToMedia) {
+                        cachedStorageInfo.removeAt(i)
+                        break
+                    }
+                }
+
+                _storageOptionsLiveData.dispatchSuccessOnMain(cachedStorageInfo)
+            } else {
+                // TODO optimize get info for volume with the specified path
+                getAllStorageOptions()
+            }
+        }
     }
 
     fun listenForRemovableStorageStateChanges(onRemovableMediaStateChanged: OnRemovableMediaStateChanged) {
@@ -45,6 +58,7 @@ class StorageRepository(
 
             // Load remote storage options from shared prefs
             availableStorageList.addAll(getRemoteStorageOptions())
+            cachedStorageInfo.clear()
             cachedStorageInfo.addAll(availableStorageList)
             _storageOptionsLiveData.dispatchSuccessOnMain(availableStorageList)
 
@@ -57,12 +71,13 @@ class StorageRepository(
     private fun getLocalStorageOptions(): List<StorageInfo> {
         val mountedVolumes = storageDiscoveryService.discoverMountedStorageVolumes()
         val availableStorageList = mutableListOf<StorageInfo>()
-        for ((volumeIndex, volume) in mountedVolumes.withIndex()) {
+        for (volume in mountedVolumes) {
             val isRemovable = storageDiscoveryService.isVolumeRemovable(volume)
 
+            val volumePath = storageDiscoveryService.discoverVolumePath(volume)
             availableStorageList.add(LocalStorageInfo(
-                volumeIndex.toString(),
-                storageDiscoveryService.discoverVolumePath(volume),
+                volumePath,
+                volumePath,
                 storageDiscoveryService.discoverVolumeDescription(volume),
                 isRemovable
             ))
@@ -72,40 +87,43 @@ class StorageRepository(
     }
 
     private fun getRemoteStorageOptions(): List<StorageInfo> {
-        val availableStorageList = mutableListOf<StorageInfo>()
+        val availableStorageList = mutableListOf<RemoteStorageInfo>()
         val savedStorageOptions = getSavedRemoteStorageOptions()
         for (savedOption in savedStorageOptions) {
             val data = savedOption.split(',')
-            if (data.size < 3) {
-                Log.e(this::class.java.simpleName, "Saved Storage option has too few parameters!")
+            if (data.size < 4 || data.size > 4) {
+                Log.e(this::class.java.simpleName, "Saved Storage option has too little or too many!")
                 continue
             }
 
             val ip = data[0]
             val user = data[1]
             val name = data[2]
+            val position = data[3].toInt()
 
             availableStorageList.add(
-                RemoteStorageInfo(ip, "$user@$ip", "", name, user, ip)
+                RemoteStorageInfo(ip, "$user@$ip", "", name, user, ip, position)
             )
         }
 
+        availableStorageList.sortBy { it.position }
         return availableStorageList
     }
 
     fun addStorageOption(serverIp: String, user: String, name: String) {
         if (sharedPrefsStorageService.containsKey(serverIp)) {
-            _storageOptionsLiveData.setError("The remote stoeage tyour adding has already been added!")
+            _storageOptionsLiveData.setError("The remote storage your adding has already been added!")
             return
         }
 
-        storeRemoteStorageOption(serverIp, user, name)
-        cachedStorageInfo.add(RemoteStorageInfo(serverIp, "$user@$serverIp" , "", name, user, serverIp))
+        val position = cachedStorageInfo.size + 1
+        storeRemoteStorageOption(serverIp, user, name, position)
+        cachedStorageInfo.add(RemoteStorageInfo(serverIp, "$user@$serverIp" , "", name, user, serverIp, position))
         _storageOptionsLiveData.setSuccess(cachedStorageInfo)
     }
 
-    private fun storeRemoteStorageOption(serverIp: String, user: String, name: String) {
-        sharedPrefsStorageService.putString(serverIp,"$serverIp,$user,$name")
+    private fun storeRemoteStorageOption(serverIp: String, user: String, name: String, position: Int) {
+        sharedPrefsStorageService.putString(serverIp,"$serverIp,$user,$name,$position")
     }
 
     private fun getSavedRemoteStorageOptions(): List<String> {
@@ -131,15 +149,9 @@ class StorageRepository(
             if (cachedStorageInfo[i].id == ip){
                 sharedPrefsStorageService.removeKey(ip, false)
                 cachedStorageInfo.removeAt(i)
-                _storageOptionsLiveData.dispatchSuccessOnMain(cachedStorageInfo, i)
+                _storageOptionsLiveData.dispatchSuccessOnMain(cachedStorageInfo)
                 return@withContext
             }
         }
-    }
-
-    companion object {
-        private const val KEY_OPTION_IP = "KEY_OPTION_IP";
-        private const val KEY_OPTION_USER = "KEY_OPTION_USER";
-        private const val KEY_OPTION_DISPLAY_NAME = "KEY_OPTION_DISPLAY_NAME";
     }
 }

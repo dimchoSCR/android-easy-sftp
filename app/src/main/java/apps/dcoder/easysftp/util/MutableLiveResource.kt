@@ -4,9 +4,9 @@ import apps.dcoder.easysftp.extensions.executeOnMainDispatcher
 import apps.dcoder.easysftp.model.status.Resource
 import kotlinx.coroutines.Dispatchers
 
-open class MutableLiveResource<T : Any?, K: Any?> : LiveResource<T, K> {
+open class MutableLiveResource<T : Any?> : LiveResource<T> {
     constructor()
-    constructor(value: Resource<T, K>) : super(value)
+    constructor(value: Resource<T>) : super(value)
 
     // Standard functions
     fun setLoading() {
@@ -15,10 +15,6 @@ open class MutableLiveResource<T : Any?, K: Any?> : LiveResource<T, K> {
 
     fun setSuccess(data: T) {
         value = Resource.success(data)
-    }
-
-    fun setSuccess(data: T, payload: K) {
-        value = Resource.success(data, payload)
     }
 
     fun setError(data: T, errMsg: String) {
@@ -36,10 +32,6 @@ open class MutableLiveResource<T : Any?, K: Any?> : LiveResource<T, K> {
 
     suspend fun dispatchSuccessOnMain(data: T) = Dispatchers.executeOnMainDispatcher {
         setSuccess(data)
-    }
-
-    suspend fun dispatchSuccessOnMain(data: T, payload: K) = Dispatchers.executeOnMainDispatcher {
-        setSuccess(data, payload)
     }
 
     suspend fun dispatchErrorOnMain(data: T, errMsg: String) = Dispatchers.executeOnMainDispatcher {

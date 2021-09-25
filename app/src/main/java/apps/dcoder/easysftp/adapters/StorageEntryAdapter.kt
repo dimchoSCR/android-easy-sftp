@@ -1,11 +1,12 @@
 package apps.dcoder.easysftp.adapters
 
-import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import apps.dcoder.easysftp.R
+import apps.dcoder.easysftp.adapters.diff.StorageDiffCallback
 import apps.dcoder.easysftp.model.androidModel.AdaptableLocalStorageInfo
 import apps.dcoder.easysftp.model.androidModel.AdaptableRemoteStorageInfo
 import apps.dcoder.easysftp.model.androidModel.AdaptableStorageInfo
@@ -50,23 +51,12 @@ class StorageEntryAdapter : RecyclerView.Adapter<StorageEntryAdapter.StorageView
         return storageItems[index]
     }
 
-    @SuppressLint("NotifyDataSetChanged")
-    fun setStorageEntries(storageEntries: List<AdaptableStorageInfo>) {
+    fun getAdaptedItems(): List<AdaptableStorageInfo> = storageItems
+
+    fun updateStorageEntries(newStorageItems: List<AdaptableStorageInfo>, diffResult: DiffUtil.DiffResult) {
         storageItems.clear()
-        storageItems.addAll(storageEntries)
-
-        notifyDataSetChanged()
-    }
-
-    fun insertStorageEntries(storageEntries: List<AdaptableStorageInfo>, startPos: Int, itemCount: Int) {
-        storageItems.clear()
-        storageItems.addAll(storageEntries)
-        notifyItemRangeInserted(startPos, itemCount)
-    }
-
-    fun deleteStorageEntry(position: Int) {
-        storageItems.removeAt(position)
-        notifyItemRemoved(position)
+        storageItems.addAll(newStorageItems)
+        diffResult.dispatchUpdatesTo(this)
     }
 
     inner class StorageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
