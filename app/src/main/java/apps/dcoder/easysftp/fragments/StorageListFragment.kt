@@ -1,14 +1,19 @@
 package apps.dcoder.easysftp.fragments
 
-import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
+import android.Manifest
+import android.content.Intent
+import android.os.*
+import android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION
 import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.PopupMenu
+import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.navigation.fragment.findNavController
 import apps.dcoder.easysftp.R
 import apps.dcoder.easysftp.adapters.StorageEntryAdapter
 import apps.dcoder.easysftp.model.LocalStorageInfo
@@ -18,6 +23,7 @@ import apps.dcoder.easysftp.model.androidModel.AdaptableLocalStorageInfo
 import apps.dcoder.easysftp.model.androidModel.AdaptableRemoteStorageInfo
 import apps.dcoder.easysftp.model.androidModel.AdaptableStorageInfo
 import apps.dcoder.easysftp.model.status.Status
+import apps.dcoder.easysftp.util.PermissionUtil
 import apps.dcoder.easysftp.viewmodels.StorageListViewModel
 import kotlinx.android.synthetic.main.fragment_storage_view.*
 import kotlinx.android.synthetic.main.fragment_storage_view.view.*
@@ -33,9 +39,12 @@ class StorageListFragment : Fragment() {
     private val mainHandler = Handler(Looper.getMainLooper())
     private val progressRunnable = Runnable { pbLoading.visibility = View.VISIBLE }
 
+    private lateinit var requestPermLauncher: ActivityResultLauncher<String>
+
     companion object {
         private const val DISPLAY_DELAY_LOADING_INDICATOR = 160L
         private const val TAG_ADD_SFTP_STORAGE_DIALOG = "AddSFTPStorage"
+        const val ARG_ROOT_DIR_PATH = "ARG_ROOT_DIR_PATH"
     }
 
     override fun onCreateView(
@@ -45,6 +54,14 @@ class StorageListFragment : Fragment() {
         // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_storage_view, container, false)
         view.lvStorageVolumes.adapter = storageEntryAdapter
+
+        requestPermLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            if (isGranted) {
+                onStoragePermissionGranted()
+            } else {
+                onStoragePermissionDenied()
+            }
+        }
 
         return view
     }
@@ -120,7 +137,16 @@ class StorageListFragment : Fragment() {
         }
 
         storageEntryAdapter.onItemClickListener = { position ->
+            storageListViewModel.selctedStorageIndex = position
+            PermissionUtil.askPermissionIfNotGranted(requestPermLauncher, Manifest.permission.WRITE_EXTERNAL_STORAGE) {
+                onStoragePermissionGranted()
+            }
 
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                if (!Environment.isExternalStorageManager()) {
+                    startActivity(Intent(ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION))
+                }
+            }
         }
 
         storageEntryAdapter.onItemLongClickListener = { position, view ->
@@ -141,4 +167,19 @@ class StorageListFragment : Fragment() {
         }
     }
 
+    private fun onStoragePermissionGranted() {
+        val adaptableItem = storageEntryAdapter.getItem(storageListViewModel.selctedStorageIndex)
+        navigateToFileViewFragment(adaptableItem.volumePath)
+    }
+
+    private fun navigateToFileViewFragment(volumePath: String) {
+        val args = Bundle()
+        args.putString(ARG_ROOT_DIR_PATH, volumePath)
+
+        findNavController().navigate(R.id.action_storageViewFragment_to_fileViewFragment, args)
+    }
+
+    private fun onStoragePermissionDenied() {
+        Toast.makeText(context, "Permission denied, functionality disabled!", Toast.LENGTH_LONG).show()
+    }
 }

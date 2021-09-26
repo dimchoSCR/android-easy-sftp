@@ -44,6 +44,7 @@ dependencies {
     // Koin for Android
     implementation deps.koin.android
     implementation deps.koin.compat
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     testImplementation deps.koin.test
 
     // Android components

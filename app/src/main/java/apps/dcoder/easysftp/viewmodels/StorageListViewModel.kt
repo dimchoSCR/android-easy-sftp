@@ -14,6 +14,8 @@ import kotlinx.coroutines.launch
 class StorageListViewModel(private val storageRepo: StorageRepository) : ViewModel(),
     StorageAddDialogFragment.DialogActionListener {
 
+    var selctedStorageIndex = -1
+
     init {
         storageRepo.listenForRemovableStorageStateChanges(object : OnRemovableMediaStateChanged {
             override fun onMediaStateChanged(pathToMedia: String, mediaState: RemovableMediaState) {

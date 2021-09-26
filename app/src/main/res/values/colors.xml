@@ -6,4 +6,5 @@
     <color name="colorError">#B00020</color>
     <color name="defaultBackgroundColor">#FFFFFF</color>
     <color name="borderColor">#616161</color>
+    <color name="material_black">#212121</color>
 </resources>
