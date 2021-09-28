@@ -1,5 +1,6 @@
 package apps.dcoder.easysftp.filemanager
 
+import androidx.annotation.WorkerThread
 import apps.dcoder.easysftp.model.FileInfo
 import java.io.Serializable
 import java.util.ArrayList
@@ -9,34 +10,30 @@ interface FileManager: Serializable {
     val rootDirectoryPath: String
     val filesCache: LinkedHashMap<String, List<FileInfo>>
 
-    fun prepare(onPrepared: (fm: FileManager) -> Unit)
+    var currentDir: String
+
+    fun prepare(onPrepared: () -> Unit)
     fun setOnFileManagerResultListener(listener: OnFileManagerResultListener)
-    fun listDirectory(dirPath: String)
-    fun getParentDirectoryPath(dir: String): String
-    fun getCurrentlyListedFiles(): ArrayList<FileInfo>
+    @WorkerThread
+    fun listDirectory(dirPath: String, forceRefresh: Boolean = false): List<FileInfo>
+    @WorkerThread
+    fun listParent(): List<FileInfo>
 
-    fun useCachedFolder(dirPath: String): Boolean {
-        val cachedDir: List<FileInfo> = filesCache[dirPath] ?: return false
-
-        val files = getCurrentlyListedFiles()
-        files.clear()
-        files.addAll(cachedDir)
-
-        return true
+    fun isOnRootDir(): Boolean {
+        return currentDir == rootDirectoryPath
     }
 
-    fun clearChildrenFromCache(parentPath: String) {
+    fun listCurrentDir(forceRefresh: Boolean): List<FileInfo> {
+        return listDirectory(currentDir, forceRefresh)
+    }
 
-        val parentDirList = filesCache[parentPath] ?:
-                        throw NoSuchElementException("Parent directory can not be found in cache!")
+    fun getParentDirectoryPath(dir: String): String
+    fun getCurrentlyListedFiles(): List<FileInfo>
 
-        // Clear the cache
-        filesCache.clear()
-
-        // Caches the parentList by copying it
-        // This way only the child files are cleared
-        // and listing the contents of the root directory is avoided
-        filesCache[rootDirectoryPath] = parentDirList
+    fun putInCache(dirPath: String, files: List<FileInfo>)
+    fun getCachedFolder(dirPath: String): List<FileInfo>? {
+        currentDir = dirPath
+        return filesCache[dirPath]
     }
 
     fun exit() = filesCache.clear()

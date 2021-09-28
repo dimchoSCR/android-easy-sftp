@@ -172,16 +172,19 @@ import java.util.LinkedHashMap
 //}
 class RemoteFileManager : FileManager {
     override val rootDirectoryPath: String = ""
-    override val filesCache: LinkedHashMap<String, List<FileInfo>> = linkedMapOf<String, List<FileInfo>>()
+    override val filesCache: LinkedHashMap<String, List<FileInfo>> = linkedMapOf()
+    override var currentDir: String = ""
 
-    override fun prepare(onPrepared: (fm: FileManager) -> Unit) = Unit
+    override fun prepare(onPrepared: () -> Unit) = Unit
 
     override fun setOnFileManagerResultListener(listener: OnFileManagerResultListener) = Unit
 
-    override fun listDirectory(dirPath: String) = Unit
+    override fun listDirectory(dirPath: String, forceRefresh: Boolean): List<FileInfo> = listOf()
+    override fun listParent(): List<FileInfo> = emptyList()
 
     override fun getParentDirectoryPath(dir: String): String = ""
 
     override fun getCurrentlyListedFiles(): ArrayList<FileInfo> = arrayListOf<FileInfo>()
+    override fun putInCache(dirPath: String, files: List<FileInfo>) = Unit
 
 }

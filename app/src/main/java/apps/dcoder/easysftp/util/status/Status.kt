@@ -1,4 +1,4 @@
-package apps.dcoder.easysftp.model.status
+package apps.dcoder.easysftp.util.status
 
 enum class Status {
     SUCCESS,

@@ -1,6 +1,11 @@
 package apps.dcoder.easysftp.fragments
 
+import android.app.ActivityManager
+import android.content.ComponentName
+import android.content.Context
+import android.content.ServiceConnection
 import android.os.Bundle
+import android.os.IBinder
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -15,29 +20,87 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import apps.dcoder.easysftp.R
 import apps.dcoder.easysftp.adapters.FilesAdapter
 import apps.dcoder.easysftp.filemanager.ListItemClickListener
-import apps.dcoder.easysftp.filemanager.OnFileManagerResultListener
 import apps.dcoder.easysftp.fragments.StorageListFragment.Companion.ARG_ROOT_DIR_PATH
 import apps.dcoder.easysftp.model.FileInfo
+import apps.dcoder.easysftp.services.android.FileManagerService
 import apps.dcoder.easysftp.viewmodels.FileViewViewModel
 import apps.dcoder.easysftp.viewmodels.ProgressState
 import kotlinx.android.synthetic.main.fragment_file_view.*
 import kotlinx.android.synthetic.main.fragment_file_view.view.*
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
+import android.content.Intent
+import apps.dcoder.easysftp.extensions.isServiceRunning
+import apps.dcoder.easysftp.util.status.Status
+import apps.dcoder.easysftp.services.android.FileManagerOperationResult
 
-class FileViewFragment: Fragment(), ListItemClickListener,
-    OnFileManagerResultListener {
+class FileViewFragment: Fragment(), ListItemClickListener {
 
     private lateinit var animation: LayoutAnimationController
-    private var prevScrollOffset: Int = 0
-    private var prevItemPos: Int = 0
 
     private val viewModel: FileViewViewModel by viewModel {
         parametersOf(requireArguments().getString(ARG_ROOT_DIR_PATH))
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+    private val filesAdapter = FilesAdapter(this)
+
+    private lateinit var fileManagerService: FileManagerService
+
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            fileManagerService = (service as FileManagerService.FileManagerBinder)
+                .getService(requireArguments().getString(ARG_ROOT_DIR_PATH, ""))
+
+            addObservers(requireView())
+            initFileManager()
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            Log.e(this::class.java.simpleName, "FileManagerService crashed!")
+        }
+    }
+
+    private fun initFileManager() {
+        // Initializes the fm and lists all files when fm is ready and
+        fileManagerService.prepare {
+            if (viewModel.serviceHasBeenKilled) {
+                fileManagerService.restoreFileManagerStateAfterServiceRestart(
+                    viewModel.lastListedDir,
+                    filesAdapter.getFileList()
+                )
+                viewModel.serviceHasBeenKilled = false
+            } else {
+                viewModel.updateProgressState(ProgressState.LOADING)
+                fileManagerService.listCurrentDirectory()
+            }
+        }
+    }
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        bindFileManagerService()
+    }
+
+    private fun bindFileManagerService() {
+        val bindSuccessful = requireActivity().bindService(
+            Intent(requireActivity(), FileManagerService::class.java),
+            serviceConnection,
+            Context.BIND_AUTO_CREATE
+        )
+
+        if (bindSuccessful) {
+            Log.i(this::class.java.simpleName, "Binding to service successful!")
+            viewModel.shouldUnbindFileService = true
+        } else {
+            Log.e(this::class.java.simpleName, "Error: The requested service doesn't " +
+                    "exist, or this client isn't allowed access to it.")
+        }
+    }
+
+    private fun unbindFileManagerService() {
+        if (viewModel.shouldUnbindFileService) {
+            requireActivity().unbindService(serviceConnection)
+        }
     }
 
     override fun onCreateView(
@@ -45,7 +108,6 @@ class FileViewFragment: Fragment(), ListItemClickListener,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-
         Log.wtf("Test", "Fragment OnCreateView")
         val filesView = inflater.inflate(
             R.layout.fragment_file_view,
@@ -55,26 +117,20 @@ class FileViewFragment: Fragment(), ListItemClickListener,
         if (savedInstanceState != null) {
             filesView.ltSwipeToRefresh.isRefreshing =
                 savedInstanceState.getBoolean("PullToRefresh")
-
-            prevItemPos = savedInstanceState.getInt("PrevItemPos")
-            prevScrollOffset = savedInstanceState.getInt("PrevScrollOffset")
         }
-
-        setUpRecyclerView(filesView)
-        addObservers(filesView)
 
         // Set up swipe to refresh
         val ltRefresh = filesView.ltSwipeToRefresh
         ltRefresh.setColorSchemeResources(R.color.colorAccent)
         ltRefresh.setOnRefreshListener {
-            prevItemPos = 0
-            prevScrollOffset = 0
-
-            viewModel.fileManager.listDirectory(viewModel.currentDirPath)
+            viewModel.resetRvPositions()
+            fileManagerService.listCurrentDirectory(true)
         }
+        ltRefresh.isEnabled = false
 
         return filesView
     }
+
 
     private fun setUpRecyclerView(rootView: View) {
         val recycler = rootView.recyclerView
@@ -92,7 +148,7 @@ class FileViewFragment: Fragment(), ListItemClickListener,
         )
         recycler.addItemDecoration(dividerItemDecoration)
 
-        recycler.adapter = FilesAdapter(viewModel.fileManager.getCurrentlyListedFiles(), this)
+        recycler.adapter = filesAdapter
 
         // Sets up the recycler view's layout animation
         animation = AnimationUtils.loadLayoutAnimation(context, R.anim.rv_animation_fall)
@@ -100,10 +156,10 @@ class FileViewFragment: Fragment(), ListItemClickListener,
     }
 
     private fun addObservers(filesView: View) {
-        viewModel.progressState.observe(this.viewLifecycleOwner) {
+        viewModel.progressState.consume(this.viewLifecycleOwner) {
             // If the cache is not empty and there are no files in the file manager
             // then the directory is empty
-            if (viewModel.getCurrentlyListedFiles().isEmpty() && it == ProgressState.IDLE) {
+            if (fileManagerService.getCurrentlyListedFiles().isEmpty() && it == ProgressState.IDLE) {
                 filesView.tvEmpty.visibility = View.VISIBLE
             }
 
@@ -115,6 +171,24 @@ class FileViewFragment: Fragment(), ListItemClickListener,
                 filesView.progressBar.visibility = View.GONE
             }
         }
+
+        fileManagerService.fileManagerOperationLiveData.consume(this.viewLifecycleOwner) { resource ->
+            when (resource.status) {
+                Status.LOADING -> {}
+                Status.SUCCESS -> {
+                    resource.data?.let { processFileManagerResult(it) }
+                }
+                Status.ERROR -> {}
+            }
+        }
+    }
+
+    private fun processFileManagerResult(opResult: FileManagerOperationResult) {
+        when (opResult) {
+            is FileManagerOperationResult.ListOperationResult -> {
+                onFilesListed(opResult.files)
+            }
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -122,34 +196,24 @@ class FileViewFragment: Fragment(), ListItemClickListener,
         requireActivity().onBackPressedDispatcher.addCallback(this.viewLifecycleOwner) {
             onBackPressed()
         }
+
+        setUpRecyclerView(requireView())
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
-
-        viewModel.fileManager.setOnFileManagerResultListener(this)
-
-        // Initializes the fm and lists all files when fm is ready and
-        if (savedInstanceState == null) {
-            ltSwipeToRefresh.isEnabled = false
-            viewModel.updateProgressState(ProgressState.LOADING)
-            viewModel.fileManager.prepare { fm -> fm.listDirectory(viewModel.currentDirPath); }
-        }
-    }
-
-    override fun onFilesListed() {
+    private fun onFilesListed(fileList: List<FileInfo>) {
         ltSwipeToRefresh.isEnabled = true
         ltSwipeToRefresh.isRefreshing = false
-//        recyclerView.visibility = View.VISIBLE
+
         viewModel.updateProgressState(ProgressState.IDLE)
 
         recyclerView.startLayoutAnimation()
-        recyclerView.adapter?.notifyDataSetChanged()
+        filesAdapter.updateFileList(fileList)
 
         val linearLayoutManager = recyclerView.layoutManager as LinearLayoutManager
+        val (prevItemPos, prevScrollOffset) = viewModel.getSavedScrollPositions()
         linearLayoutManager.scrollToPositionWithOffset(prevItemPos, prevScrollOffset)
 
-        if (viewModel.fileManager.getCurrentlyListedFiles().isEmpty()) {
+        if (fileList.isEmpty()) {
             tvEmpty.visibility = View.VISIBLE
         } else {
             tvEmpty.visibility = View.GONE
@@ -157,7 +221,7 @@ class FileViewFragment: Fragment(), ListItemClickListener,
     }
 
     override fun onListItemClick(clickedItemIndex: Int) {
-        val clickedFileInfo: FileInfo = viewModel.fileManager.getCurrentlyListedFiles()[clickedItemIndex]
+        val clickedFileInfo: FileInfo = fileManagerService.getCurrentlyListedFiles()[clickedItemIndex]
 
         if (clickedFileInfo.isDirectory) {
             viewModel.updateProgressState(ProgressState.LOADING)
@@ -166,55 +230,26 @@ class FileViewFragment: Fragment(), ListItemClickListener,
             // Store the data in a stack
             // Then list the new directory
             val childAtTopOfList: View = recyclerView.getChildAt(0)
-            prevItemPos = recyclerView.getChildAdapterPosition(childAtTopOfList)
-            prevScrollOffset = childAtTopOfList.top
-            viewModel.stateStack.add(Pair(prevItemPos, prevScrollOffset))
+            val prevItemPos = recyclerView.getChildAdapterPosition(childAtTopOfList)
+            val prevScrollOffset = childAtTopOfList.top
+
+            // Save the scroll position for this directory
+            viewModel.positionStack.add(Pair(prevItemPos, prevScrollOffset))
 
             // Reset position variables
-            prevItemPos = 0
-            prevScrollOffset = 0
+            viewModel.resetRvPositions()
 
-            val prevDirPath = viewModel.currentDirPath
-            viewModel.currentDirPath = clickedFileInfo.absolutePath
-
-            // TODO add cache limit
-            // If there are cache entries load and the requested item is in the cache display it
-            if (viewModel.fileManager.useCachedFolder(viewModel.currentDirPath)) {
-                Log.wtf("Test", "From cache")
-                onFilesListed()
-            } else {
-                Log.wtf("Test", "No cache")
-
-                // Clear accumulated cache when the user navigates
-                // to a directory for the first time from the storage root
-                if (viewModel.fileManager.filesCache.size > 1 && prevDirPath == viewModel.rootDirPath) {
-                    // Clears only the children of the root Directory
-                    viewModel.fileManager.clearChildrenFromCache(viewModel.rootDirPath)
-                    Log.wtf("Test", "Clearing cache")
-                }
-
-                // Do not invoke if listing the root Directory
-                viewModel.fileManager.listDirectory(clickedFileInfo.absolutePath)
-            }
+            fileManagerService.listDirectory(clickedFileInfo.absolutePath)
         }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-
-        Log.wtf("Test", "saving state")
-        outState.putInt("PrevItemPos", prevItemPos)
-        outState.putInt("PrevScrollOffset", prevScrollOffset)
         outState.putBoolean("PullToRefresh", ltSwipeToRefresh.isRefreshing)
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-    }
-
-
     private fun onBackPressed() {
-        if (viewModel.currentDirPath != viewModel.rootDirPath) {
+        if (!fileManagerService.isOnRootDir()) {
             recyclerView.stopScroll()
 
             // Stop the result of a currently running task
@@ -227,27 +262,32 @@ class FileViewFragment: Fragment(), ListItemClickListener,
 //            }
 
             // Restore the lists previous state
-            val (prevItemPos, prevScrollOffset) = viewModel.stateStack.pop()
-            this.prevItemPos = prevItemPos
-            this.prevScrollOffset = prevScrollOffset
+            viewModel.popSavedScrollPositions()
 
             // Gets the parent directory of the currentDirectory
             // Then updates the currentDirPath reference
-            viewModel.currentDirPath = viewModel.fileManager.getParentDirectoryPath(viewModel.currentDirPath)
-
-            // Use a cached entry or list the directory if cache is empty
-            if (viewModel.fileManager.useCachedFolder(viewModel.currentDirPath)) {
-                Log.wtf("Test", "From cache")
-                onFilesListed()
-            } else {
-                Log.wtf("Test", "No cache")
-                viewModel.updateProgressState(ProgressState.LOADING)
-                viewModel.fileManager.listDirectory(viewModel.currentDirPath)
-            }
+            fileManagerService.listParent()
 
         } else {
             findNavController().popBackStack()
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        val activityManager = requireContext().getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        if (!activityManager.isServiceRunning(FileManagerService::class.java)) {
+            unbindFileManagerService()
+            requireActivity().startService(Intent(requireContext(), FileManagerService::class.java))
+            viewModel.serviceHasBeenKilled = true
+            bindFileManagerService()
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        viewModel.lastListedDir = fileManagerService.getCurrentDir()
     }
 
     override fun onDestroy() {
@@ -255,8 +295,10 @@ class FileViewFragment: Fragment(), ListItemClickListener,
 
         if (this.isRemoving) {
             Log.wtf("Test", "Fragment removing. Thread destroying")
-            viewModel.fileManager.exit()
+            fileManagerService.exit()
         }
+
+        unbindFileManagerService()
 
         Log.wtf("Test", "On fragment destroy")
     }

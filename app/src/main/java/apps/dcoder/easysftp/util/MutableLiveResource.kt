@@ -1,7 +1,6 @@
 package apps.dcoder.easysftp.util
 
 import apps.dcoder.easysftp.extensions.executeOnMainDispatcher
-import apps.dcoder.easysftp.model.status.Resource
 import kotlinx.coroutines.Dispatchers
 
 open class MutableLiveResource<T : Any?> : LiveResource<T> {

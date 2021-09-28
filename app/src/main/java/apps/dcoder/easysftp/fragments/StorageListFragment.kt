@@ -22,7 +22,8 @@ import apps.dcoder.easysftp.model.StorageInfo
 import apps.dcoder.easysftp.model.androidModel.AdaptableLocalStorageInfo
 import apps.dcoder.easysftp.model.androidModel.AdaptableRemoteStorageInfo
 import apps.dcoder.easysftp.model.androidModel.AdaptableStorageInfo
-import apps.dcoder.easysftp.model.status.Status
+import apps.dcoder.easysftp.services.android.FileManagerService
+import apps.dcoder.easysftp.util.status.Status
 import apps.dcoder.easysftp.util.PermissionUtil
 import apps.dcoder.easysftp.viewmodels.StorageListViewModel
 import kotlinx.android.synthetic.main.fragment_storage_view.*
@@ -168,6 +169,9 @@ class StorageListFragment : Fragment() {
     }
 
     private fun onStoragePermissionGranted() {
+        // Start FileManager service
+        requireActivity().startService(Intent(requireContext(), FileManagerService::class.java))
+
         val adaptableItem = storageEntryAdapter.getItem(storageListViewModel.selctedStorageIndex)
         navigateToFileViewFragment(adaptableItem.volumePath)
     }

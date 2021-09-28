@@ -1,5 +1,6 @@
 package apps.dcoder.easysftp.adapters
 
+import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,29 +11,12 @@ import apps.dcoder.easysftp.R
 import apps.dcoder.easysftp.filemanager.ListItemClickListener
 import apps.dcoder.easysftp.model.FileInfo
 import kotlinx.android.synthetic.main.rv_file_item.view.*
-import java.util.ArrayList
 
-class FilesAdapter(private val files: ArrayList<FileInfo>,
-                   private val listener: ListItemClickListener
+class FilesAdapter(
+    private val listener: ListItemClickListener
 ) : RecyclerView.Adapter<FilesAdapter.FilesViewHolder>() {
 
-    inner class FilesViewHolder(itemView: View)
-        : RecyclerView.ViewHolder(itemView), View.OnClickListener {
-
-        val ivFileIcon: ImageView = itemView.ivFileIcon
-        val tvFileName: TextView = itemView.tvFileName
-        val tvFileType: TextView = itemView.tvFileType
-        val tvLastEdit: TextView = itemView.tvLastEdit
-
-        init {
-            itemView.setOnClickListener(this)
-        }
-
-        // On recycler view item click
-        override fun onClick(v: View?) {
-            listener.onListItemClick(absoluteAdapterPosition)
-        }
-    }
+    private val files: MutableList<FileInfo> = mutableListOf()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FilesViewHolder {
         val itemView = LayoutInflater.from(parent.context)
@@ -52,5 +36,34 @@ class FilesAdapter(private val files: ArrayList<FileInfo>,
         holder.tvFileType.text = currentFileInfo.fileType.value
         holder.tvFileName.text = currentFileInfo.name
         holder.tvLastEdit.text = currentFileInfo.lastEdit
+    }
+
+    fun getFileList() : List<FileInfo> {
+        return files
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    fun updateFileList(list: List<FileInfo>) {
+        files.clear()
+        files.addAll(list)
+        notifyDataSetChanged()
+    }
+
+    inner class FilesViewHolder(itemView: View)
+        : RecyclerView.ViewHolder(itemView), View.OnClickListener {
+
+        val ivFileIcon: ImageView = itemView.ivFileIcon
+        val tvFileName: TextView = itemView.tvFileName
+        val tvFileType: TextView = itemView.tvFileType
+        val tvLastEdit: TextView = itemView.tvLastEdit
+
+        init {
+            itemView.setOnClickListener(this)
+        }
+
+        // On recycler view item click
+        override fun onClick(v: View?) {
+            listener.onListItemClick(absoluteAdapterPosition)
+        }
     }
 }
