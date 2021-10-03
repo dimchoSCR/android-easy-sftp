@@ -7,6 +7,6 @@ import org.koin.dsl.module
 
 val viewModelsModule = module {
     viewModel { StorageListViewModel(get()) }
-    viewModel { (rootDirPath: String) -> FileViewViewModel(rootDirPath) }
+    single { (rootDirPath: String) -> FileViewViewModel(rootDirPath) }
 //    viewModel { (rootDirPath: String) -> FileViewViewModel(get { parametersOf(rootDirPath) }, rootDirPath) }
 }

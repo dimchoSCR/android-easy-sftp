@@ -13,6 +13,7 @@ import apps.dcoder.easysftp.util.LiveResource
 import apps.dcoder.easysftp.util.MutableLiveResource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.regex.Pattern
 
 class StorageRepository(
     private val storageDiscoveryService: StorageDiscoveryService,
@@ -130,12 +131,22 @@ class StorageRepository(
         val storageOptions = sharedPrefsStorageService.readAll()
         val savedRemoteStorageList = mutableListOf<String>()
         for (key in storageOptions.keys) {
-            if (key.isIP()) {
-                storageOptions[key]?.let {
-                    if (String::class.java.isAssignableFrom(it::class.java)) {
-                        savedRemoteStorageList.add(it as String)
-                    } else {
-                        Log.e(this::class.java.simpleName, "Could not assign shared prefs value into Set<String>")
+            if (key.contains('/')) {
+                val splitKey = key.split(Pattern.compile("/"), 2)
+                if (splitKey.size != 2) {
+                    throw Exception("Bad path!")
+                }
+
+                if (splitKey[0].isIP()) {
+                    storageOptions[key]?.let {
+                        if (String::class.java.isAssignableFrom(it::class.java)) {
+                            savedRemoteStorageList.add(it as String)
+                        } else {
+                            Log.e(
+                                this::class.java.simpleName,
+                                "Could not assign shared prefs value into Set<String>"
+                            )
+                        }
                     }
                 }
             }

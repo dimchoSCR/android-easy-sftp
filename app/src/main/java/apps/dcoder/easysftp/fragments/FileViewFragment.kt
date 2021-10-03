@@ -30,15 +30,23 @@ import kotlinx.android.synthetic.main.fragment_file_view.view.*
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import apps.dcoder.easysftp.extensions.isServiceRunning
+import apps.dcoder.easysftp.fragments.dialog.PasswordPromptDialog
 import apps.dcoder.easysftp.util.status.Status
 import apps.dcoder.easysftp.services.android.FileManagerOperationResult
+import org.koin.android.ext.android.inject
 
 class FileViewFragment: Fragment(), ListItemClickListener {
 
     private lateinit var animation: LayoutAnimationController
 
     private val viewModel: FileViewViewModel by viewModel {
+        parametersOf(requireArguments().getString(ARG_ROOT_DIR_PATH))
+    }
+
+    private val passPromptDialog: PasswordPromptDialog by inject {
         parametersOf(requireArguments().getString(ARG_ROOT_DIR_PATH))
     }
 
@@ -63,15 +71,17 @@ class FileViewFragment: Fragment(), ListItemClickListener {
     private fun initFileManager() {
         // Initializes the fm and lists all files when fm is ready and
         fileManagerService.prepare {
-            if (viewModel.serviceHasBeenKilled) {
-                fileManagerService.restoreFileManagerStateAfterServiceRestart(
-                    viewModel.lastListedDir,
-                    filesAdapter.getFileList()
-                )
-                viewModel.serviceHasBeenKilled = false
-            } else {
-                viewModel.updateProgressState(ProgressState.LOADING)
-                fileManagerService.listCurrentDirectory()
+            Handler(Looper.getMainLooper()).post {
+                if (viewModel.serviceHasBeenKilled) {
+                    fileManagerService.restoreFileManagerStateAfterServiceRestart(
+                        viewModel.lastListedDir,
+                        filesAdapter.getFileList()
+                    )
+                    viewModel.serviceHasBeenKilled = false
+                } else {
+                    viewModel.updateProgressState(ProgressState.LOADING)
+                    fileManagerService.listCurrentDirectory()
+                }
             }
         }
     }
@@ -180,6 +190,14 @@ class FileViewFragment: Fragment(), ListItemClickListener {
                 }
                 Status.ERROR -> {}
             }
+        }
+
+        fileManagerService.sshPassRequestEvent.consume(this.viewLifecycleOwner) {
+            passPromptDialog.show(parentFragmentManager, TAG_PASSWORD_DIALOG)
+        }
+
+        viewModel.eventPasswordSet.consume(this.viewLifecycleOwner) { pass ->
+            fileManagerService.setRemotePassword(pass)
         }
     }
 
@@ -293,13 +311,12 @@ class FileViewFragment: Fragment(), ListItemClickListener {
     override fun onDestroy() {
         super.onDestroy()
 
-        if (this.isRemoving) {
-            Log.wtf("Test", "Fragment removing. Thread destroying")
-            fileManagerService.exit()
-        }
-
         unbindFileManagerService()
 
         Log.wtf("Test", "On fragment destroy")
+    }
+
+    companion object {
+        private const val TAG_PASSWORD_DIALOG = "TAG_PASSWORD_DIALOG"
     }
 }

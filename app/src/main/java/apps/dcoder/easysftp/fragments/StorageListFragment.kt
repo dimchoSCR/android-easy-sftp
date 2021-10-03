@@ -16,6 +16,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.navigation.fragment.findNavController
 import apps.dcoder.easysftp.R
 import apps.dcoder.easysftp.adapters.StorageEntryAdapter
+import apps.dcoder.easysftp.fragments.dialog.StorageAddDialogFragment
 import apps.dcoder.easysftp.model.LocalStorageInfo
 import apps.dcoder.easysftp.model.RemoteStorageInfo
 import apps.dcoder.easysftp.model.StorageInfo
@@ -138,7 +139,7 @@ class StorageListFragment : Fragment() {
         }
 
         storageEntryAdapter.onItemClickListener = { position ->
-            storageListViewModel.selctedStorageIndex = position
+            storageListViewModel.selectedStorageIndex = position
             PermissionUtil.askPermissionIfNotGranted(requestPermLauncher, Manifest.permission.WRITE_EXTERNAL_STORAGE) {
                 onStoragePermissionGranted()
             }
@@ -172,7 +173,7 @@ class StorageListFragment : Fragment() {
         // Start FileManager service
         requireActivity().startService(Intent(requireContext(), FileManagerService::class.java))
 
-        val adaptableItem = storageEntryAdapter.getItem(storageListViewModel.selctedStorageIndex)
+        val adaptableItem = storageEntryAdapter.getItem(storageListViewModel.selectedStorageIndex)
         navigateToFileViewFragment(adaptableItem.volumePath)
     }
 

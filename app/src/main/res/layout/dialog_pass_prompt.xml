@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="@dimen/margin_base_16"
+    android:orientation="vertical" >
+
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/margin_base_8"
+        android:gravity="center_horizontal"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        tools:text="Enter password for none@192.168.1.240" />
+
+    <apps.dcoder.easysftp.custom.LabeledEditText
+        android:id="@+id/labeledEtPassword"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/margin_base_6"
+        app:labelText="@string/password"
+        app:hint="@string/enter_password"
+        style="@style/SftpPropertyLabel" />
+
+</LinearLayout>

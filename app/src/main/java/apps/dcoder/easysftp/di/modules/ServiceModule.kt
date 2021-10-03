@@ -13,7 +13,7 @@ val serviceModule = module {
     single { SharedPrefsStorageService(androidContext()) }
     factory { (fileManagerType: FileManagerType, rootDirPath: String) ->
         if (fileManagerType == FileManagerType.REMOTE) {
-            RemoteFileManager()
+            RemoteFileManager(rootDirPath)
         } else {
             LocalFileManager(rootDirPath)
         }

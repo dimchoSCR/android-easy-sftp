@@ -34,6 +34,15 @@
         style="@style/SftpPropertyLabel" />
 
     <apps.dcoder.easysftp.custom.LabeledEditText
+        android:id="@+id/labeledEtFolderPath"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/margin_base_2"
+        app:labelText="@string/path"
+        app:hint="@string/hint_folder_path"
+        style="@style/SftpPropertyLabel" />
+
+    <apps.dcoder.easysftp.custom.LabeledEditText
         android:id="@+id/labeledEtName"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

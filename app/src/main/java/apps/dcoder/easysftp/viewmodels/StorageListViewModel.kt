@@ -3,7 +3,7 @@ package apps.dcoder.easysftp.viewmodels
 import androidx.lifecycle.*
 import androidx.recyclerview.widget.DiffUtil
 import apps.dcoder.easysftp.adapters.diff.StorageDiffCallback
-import apps.dcoder.easysftp.fragments.StorageAddDialogFragment
+import apps.dcoder.easysftp.fragments.dialog.DialogActionListener
 import apps.dcoder.easysftp.model.androidModel.AdaptableStorageInfo
 import apps.dcoder.easysftp.repos.StorageRepository
 import apps.dcoder.easysftp.services.storage.RemovableMediaState
@@ -12,9 +12,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class StorageListViewModel(private val storageRepo: StorageRepository) : ViewModel(),
-    StorageAddDialogFragment.DialogActionListener {
+    DialogActionListener<Array<String>> {
 
-    var selctedStorageIndex = -1
+    var selectedStorageIndex = -1
 
     init {
         storageRepo.listenForRemovableStorageStateChanges(object : OnRemovableMediaStateChanged {

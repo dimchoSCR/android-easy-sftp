@@ -3,6 +3,7 @@ package apps.dcoder.easysftp.filemanager
 import android.util.Log
 import apps.dcoder.easysftp.model.FileInfo
 import apps.dcoder.easysftp.model.getFileInfoFromFile
+import com.jcraft.jsch.UserInfo
 import java.io.File
 import java.util.Collections
 import kotlin.collections.LinkedHashMap
@@ -58,39 +59,8 @@ class LocalFileManager(override val rootDirectoryPath: String): FileManager {
         return files
     }
 
-    override fun listParent(): List<FileInfo> {
-        val parentPath = getParentDirectoryPath(currentDir)
-        currentDir = parentPath
-        val cache = filesCache[parentPath]
-        if (cache != null) {
-            return cache
-        }
-
-        return listDirectory(parentPath)
-    }
-
     override fun getCurrentlyListedFiles(): List<FileInfo> {
         return filesCache[currentDir] ?: mutableListOf()
-    }
-
-    override fun putInCache(dirPath: String, files: List<FileInfo>) {
-        if (filesCache.entries.size <= 10) {
-            filesCache[dirPath] = files
-        } else {
-            var keyToRemove = ""
-            for ((i, entry) in filesCache.entries.withIndex()) {
-                if (i == filesCache.entries.size / 2) {
-                    keyToRemove = entry.key
-                    break
-                }
-            }
-
-            if (keyToRemove != "") {
-                filesCache.remove(keyToRemove)
-            }
-
-            filesCache[dirPath] = files
-        }
     }
 
     override fun getParentDirectoryPath(dir: String): String {

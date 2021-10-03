@@ -3,11 +3,15 @@ package apps.dcoder.easysftp.services.android
 import CoroutineService
 import android.content.Intent
 import android.os.Binder
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
+import android.util.Log
+import android.widget.Toast
 import apps.dcoder.easysftp.filemanager.FileManager
+import apps.dcoder.easysftp.filemanager.RemoteFileManager
 import apps.dcoder.easysftp.model.FileInfo
-import apps.dcoder.easysftp.util.LiveResource
-import apps.dcoder.easysftp.util.MutableLiveResource
+import apps.dcoder.easysftp.util.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
@@ -38,6 +42,9 @@ class FileManagerService : CoroutineService(), KoinComponent {
 
     private val _fileManagerOperationLiveData = MutableLiveResource<FileManagerOperationResult>()
     val fileManagerOperationLiveData: LiveResource<FileManagerOperationResult> = _fileManagerOperationLiveData
+
+    private val _sshPassRequestEvent = MutableLiveEvent<Unit>()
+    val sshPassRequestEvent: LiveEvent<Unit> = _sshPassRequestEvent
 
     private lateinit var currentFileManager: FileManager
 
@@ -108,8 +115,8 @@ class FileManagerService : CoroutineService(), KoinComponent {
         return currentFileManager.currentDir
     }
 
-    fun exit() {
-        currentFileManager.exit()
+    fun setRemotePassword(pass: String) {
+        (remoteFileManager as RemoteFileManager).setSshPassword(pass)
     }
 
     inner class FileManagerBinder : Binder() {
@@ -117,12 +124,28 @@ class FileManagerService : CoroutineService(), KoinComponent {
             if (rootDirectory.contains('@')) {
                 remoteRootDirPath = rootDirectory
                 currentFileManager = remoteFileManager
+                val castRemoteFileManager = (remoteFileManager as RemoteFileManager)
+                castRemoteFileManager.onPasswordRequested = {
+                    _sshPassRequestEvent.postValue(Event(Unit))
+                }
             } else {
                 localRootDirPath = rootDirectory
                 currentFileManager = localFileManager
             }
 
             return this@FileManagerService
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d("DMK", "Exiting file managers")
+        if (localRootDirPath != "") {
+            localFileManager.exit()
+        }
+
+        if (remoteRootDirPath != "") {
+            remoteFileManager.exit()
         }
     }
 }

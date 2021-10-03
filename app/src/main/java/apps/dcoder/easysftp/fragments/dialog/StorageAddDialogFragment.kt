@@ -1,4 +1,4 @@
-package apps.dcoder.easysftp.fragments
+package apps.dcoder.easysftp.fragments.dialog
 
 import android.app.Dialog
 import android.os.Bundle
@@ -9,9 +9,10 @@ import androidx.fragment.app.DialogFragment
 import apps.dcoder.easysftp.R
 import apps.dcoder.easysftp.custom.LabeledEditText
 import apps.dcoder.easysftp.extensions.isIP
+import apps.dcoder.easysftp.extensions.isFolderPath
 import kotlinx.android.synthetic.main.dialog_add_sftp_server.*
 
-class StorageAddDialogFragment(private val dialogClickActionListener: DialogActionListener) : DialogFragment() {
+class StorageAddDialogFragment(private val dialogClickActionListener: DialogActionListener<Array<String>>) : DialogFragment() {
 
     private lateinit var alertDialog: AlertDialog
 
@@ -20,20 +21,23 @@ class StorageAddDialogFragment(private val dialogClickActionListener: DialogActi
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                val serverIp = alertDialog.labeledEtServer.getText()
+                val serverFullPath = alertDialog.labeledEtServer.getText()
                 val username = alertDialog.labeledEtUser.getText()
                 val displayName = alertDialog.labeledEtName.getText()
+                val folderPath = alertDialog.labeledEtFolderPath.getText()
 
                 val isIpValid = alertDialog.labeledEtServer
-                    .doLabelCheck("Please enter IP") {
-                        !serverIp.isNullOrEmpty() && serverIp.isIP()
+                    .doLabelCheck("Please enter IP and folder path") {
+                        !serverFullPath.isNullOrEmpty() && serverFullPath.isIP()
                     }
                 val isUsernameValid = alertDialog.labeledEtUser
                     .doLabelCheck("Please enter user name") { !username.isNullOrBlank() }
                 val isDisplayNameValid = alertDialog.labeledEtName
                     .doLabelCheck("Please enter display name") { !displayName.isNullOrBlank() }
+                val isFolderPathValid = alertDialog.labeledEtFolderPath
+                    .doLabelCheck("Please enter a folder path") { !folderPath.isNullOrEmpty() && folderPath.isFolderPath() }
 
-                val shouldEnable = isIpValid && isUsernameValid && isDisplayNameValid
+                val shouldEnable = isIpValid && isUsernameValid && isDisplayNameValid && isFolderPathValid
                 alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = shouldEnable
             }
 
@@ -62,9 +66,9 @@ class StorageAddDialogFragment(private val dialogClickActionListener: DialogActi
             .setPositiveButton(R.string.add) { _, _ ->
                 dialog?.let {
                     // Texts should not be null at this point since button is enabled only after
-                    // the validations cheks were passed
+                    // the validations checks were passed
                     val dataArr = arrayOf(
-                        it.labeledEtServer.getText()!!,
+                        it.labeledEtServer.getText()!! + it.labeledEtFolderPath.getText()!!,
                         it.labeledEtUser.getText()!!,
                         it.labeledEtName.getText()!!
                     )
@@ -87,6 +91,7 @@ class StorageAddDialogFragment(private val dialogClickActionListener: DialogActi
         alertDialog.labeledEtServer.setTextWatcher(textWatcher)
         alertDialog.labeledEtUser.setTextWatcher(textWatcher)
         alertDialog.labeledEtName.setTextWatcher(textWatcher)
+        alertDialog.labeledEtFolderPath.setTextWatcher(textWatcher)
     }
 
     override fun onDestroy() {
@@ -95,10 +100,6 @@ class StorageAddDialogFragment(private val dialogClickActionListener: DialogActi
         alertDialog.labeledEtServer.removeTextWatcher(textWatcher)
         alertDialog.labeledEtUser.removeTextWatcher(textWatcher)
         alertDialog.labeledEtName.removeTextWatcher(textWatcher)
-    }
-
-    interface DialogActionListener {
-        fun onDialogPositiveClick(result: Array<String>)
-        fun onDialogNegativeClick() { }
+        alertDialog.labeledEtFolderPath.removeTextWatcher(textWatcher)
     }
 }

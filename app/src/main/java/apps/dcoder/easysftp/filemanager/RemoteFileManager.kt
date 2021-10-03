@@ -1,190 +1,130 @@
 package apps.dcoder.easysftp.filemanager
 
+import android.util.Log
 import apps.dcoder.easysftp.model.FileInfo
-import java.util.ArrayList
-import java.util.LinkedHashMap
+import apps.dcoder.easysftp.model.getFileInfoFromSftp
+import com.jcraft.jsch.*
+import com.jcraft.jsch.ChannelSftp.LsEntrySelector
+import java.io.File
+import java.lang.Exception
+import java.util.*
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.regex.Pattern
 
-//
-//import android.os.Handler
-//import android.os.Looper
-//import android.os.Message
-//import com.jcraft.jsch.UserInfo
-//import java.io.File
-//import java.util.*
-//import kotlin.collections.ArrayList
-//import kotlin.collections.HashMap
-//import kotlin.collections.HashSet
-//
-//const val ACTION_LIST_DIRECTORY = 5
-//const val ACTION_QUIT_HANDLER_THREAD = -1
-//
-//class RemoteFileManager(private val userInfo: UserInfo): FileManager {
-//
-//    private val mainHandler: MainHandler = MainHandler(Looper.getMainLooper())
-//    private var fileHandlerThread: RemoteFileHandlerThread
-//            = RemoteFileHandlerThread(mainHandler, userInfo)
-//    private val listedFiles: java.util.ArrayList<FileInfo> = java.util.ArrayList(30)
-//
-//    private lateinit var onFileManagerPrepared: (fm: FileManager) -> Unit
-//    private lateinit var onFileManagerResultListener: OnFileManagerResultListener
-//
-//    private var quitMessageSent: Boolean = false
-//
-//    private val idsOfTasksToBeCancelled: HashSet<String> = HashSet()
-//    private val runningTaskIdQueue: LinkedList<String> = LinkedList()
-//    private val taskTypeToActionMap: HashMap<String, Int> = hashMapOf(
-//        TaskType.LIST.value to ACTION_LIST_DIRECTORY
-//    )
-//
-//    private fun clearCancelledTasks(currentlyFinishedTaskIdIndex: Int) {
-//        for(i in 0 until currentlyFinishedTaskIdIndex) {
-//            idsOfTasksToBeCancelled.remove(runningTaskIdQueue.poll())
-//        }
-//    }
-//
-//    private inner class MainHandler(looper: Looper): Handler(looper) {
-//        override fun handleMessage(msg: Message) {
-//            // Stop handling of pending task, because thread quit
-//            if(quitMessageSent) {
-//                return
-//            }
-//
-//            // May be null because the empty quit task does not require an id
-//            val currentlyFinishedTaskID: String? = fileHandlerThread.finishingTaskIdQueue.poll()
-//            // Clear accumulated cancelled tasks in the runningTaskIdQueue
-//            // and in idsOfTasksToBeCancelled set
-//            // Tasks are accumulated in both structures when handler.removeMessages(what, obj)
-//            // is called. Since the removeMessages method does not guarantee message removal
-//            // we don't know if we should clear the task we attempted to cancel
-//            clearCancelledTasks(runningTaskIdQueue.indexOf(currentlyFinishedTaskID))
-//            // Remove the currently finished task from the queue
-//            runningTaskIdQueue.remove(currentlyFinishedTaskID)
-//
-//            when(msg.what) {
-//                // HandlerThread is up and running so call onFileManagerPrepared()
-//                RemoteFileHandlerThread.RESULT_CHANNEL_CONNECTED -> {
-//                    onFileManagerPrepared(this@RemoteFileManager)
-//                }
-//
-//                RemoteFileHandlerThread.RESULT_LISTED_DIRECTORY -> {
-//                    val files: java.util.ArrayList<FileInfo> = msg.obj as java.util.ArrayList<FileInfo>
-//                    shouldReInitiateDirListing = false
-//                    val pathToCurrentlyListedDir = currentlyFinishedTaskID!!
-//                        .split(Regex.fromLiteral(":"))[1]
-//
-////                    fileHandlerThread.taskStatusMap[currentlyFinishedTaskID] = RemoteFileHandlerThread.TaskStatus.FINISHED
-//
-//                    // TODO if cache is running low clear previous entry
-//                    // Insert the listed directory in the cache
-//                    if(!files.isEmpty()) {
-//                        filesCache[pathToCurrentlyListedDir] = ArrayList(files)
-//                    }
-//
-//                    // Cancel the result of the task if it was cancelled by the user
-//                    if(idsOfTasksToBeCancelled.remove(currentlyFinishedTaskID)) {
-//                        return
-//                    }
-//
-//                    listedFiles.clear()
-//                    listedFiles.addAll(files)
-//
-//                    onFileManagerResultListener.onFilesListed()
-//                }
-//
-//                else -> super.handleMessage(msg)
-//            }
-//        }
-//    }
-//
-//    override val rootDirectoryPath: String = "/export/content/downloads"
-//
-//    override val filesCache: LinkedHashMap<String, List<FileInfo>> = linkedMapOf()
-//
-//    override var shouldReInitiateDirListing: Boolean = true
-//
-//    override fun prepare(onPrepared: (fm: FileManager) -> Unit) {
-//        fileHandlerThread = RemoteFileHandlerThread(mainHandler, userInfo)
-//        fileHandlerThread.start()
-//
-//        onFileManagerPrepared = onPrepared
-//    }
-//
-//    override fun setOnFileManagerResultListener(listener: OnFileManagerResultListener) {
-//        onFileManagerResultListener = listener
-//    }
-//
-//    override fun getCurrentlyListedFiles(): java.util.ArrayList<FileInfo> {
-//        return listedFiles
-//    }
-//
-//    override fun listDirectory(dirPath: String) {
-//        val handler = fileHandlerThread.handler
-////        pathToCurrentlyListedDir = dirPath
-//
-//        val taskId = TaskType.LIST.constructTaskId(dirPath)
-//        runningTaskIdQueue.add(taskId)
-////        mp[taskId] = dirPath
-////        fileHandlerThread.taskStatusMap[taskId] = RemoteFileHandlerThread.TaskStatus.PENDING
-//
-//        handler.sendMessage (
-//            handler.obtainMessage(ACTION_LIST_DIRECTORY, taskId)
-//        )
-//    }
-//
-//    override fun getParentDirectoryPath(dir: String): String {
-//        return dir.substring(0, dir.lastIndexOf(File.separatorChar))
-//    }
-//
-////    override fun clearPendingTaskResultsFromActivity(resultID: Int) {
-////        mainHandler.removeMessages(resultID)
-////    }
-////
-////    override fun findIdOfTaskToCancel(): String? {
-////        for (currentRunningTaskID in runningTaskIdQueue) {
-////            if (idsOfTasksToBeCancelled.contains(currentRunningTaskID)) {
-////                continue
-////            }
-////
-////            return currentRunningTaskID
-////        }
-////
-////        return null
-////    }
-////
-////    override fun cancelTaskWithID(taskID: String) {
-////        val splitStringList = taskID.split(Regex.fromLiteral(":"))
-////        val messageWhat: Int = taskTypeToActionMap[splitStringList.first()]
-////            ?: throw Exception("No such key in taskTypeToActionMap")
-////
-////        // Try to prevent queued task from running
-////        // This operation may or may not succeed
-////        // So add the task's id to the shouldBeCancelledIfReceived set
-////        fileHandlerThread.handler.removeMessages(messageWhat, taskID)
-////        idsOfTasksToBeCancelled.add(taskID)
-////    }
-//
-//    override fun exit() {
-//        super.exit()
-//
-//        quitMessageSent = true
-//        fileHandlerThread.handler.sendEmptyMessage(ACTION_QUIT_HANDLER_THREAD)
-//    }
-//}
-class RemoteFileManager : FileManager {
-    override val rootDirectoryPath: String = ""
-    override val filesCache: LinkedHashMap<String, List<FileInfo>> = linkedMapOf()
+class RemoteFileManager(fullyQualifiedPath: String) : FileManager {
+
+    override val rootDirectoryPath: String
     override var currentDir: String = ""
+    override val filesCache: LinkedHashMap<String, List<FileInfo>> = linkedMapOf()
 
-    override fun prepare(onPrepared: () -> Unit) = Unit
+    private val username: String
+    private val ip: String
+
+    private var isConnected = false
+
+    init {
+        val userNameAndAddressArr = fullyQualifiedPath.split('@')
+        if (userNameAndAddressArr.size != 2) {
+            throw Exception("Fully qualified path: $fullyQualifiedPath, was not valid!")
+        }
+
+        username = userNameAndAddressArr[0]
+
+        val ipAndFolderPath = userNameAndAddressArr[1].split(Pattern.compile("/"), 2)
+        if (ipAndFolderPath.size != 2) {
+            throw Exception("Fully qualified path: $fullyQualifiedPath, does not contain ip and folder path!")
+        }
+
+        ip = ipAndFolderPath[0]
+        rootDirectoryPath = "/" + ipAndFolderPath[1]
+        currentDir = rootDirectoryPath
+    }
+
+    private lateinit var executor: ExecutorService
+
+    private lateinit var session : Session
+    private lateinit var sftpChannel: ChannelSftp
+
+    var onPasswordRequested: (() -> Unit)? = null
+        set(value) {
+            field = value
+            userInfo.onPasswordRequested = value
+        }
+
+    private val userInfo = SftpUserInfo()
+
+    fun setSshPassword(password: String) {
+        Log.d("DMK", "Pass in remote file manager: $password")
+        userInfo.setPassword(password)
+    }
+
+    private fun initConnection()  {
+        try {
+            session = JSch().getSession(username, ip)
+            session.userInfo = userInfo
+
+            session.connect()
+            Log.d("DMK", "CONNECTED")
+
+            val channel: Channel = session.openChannel("sftp")
+            channel.connect()
+
+            sftpChannel = channel as ChannelSftp
+            isConnected = true
+        } catch (err: Exception) {
+            Log.e("DMK", "Error while initialising session", err)
+        }
+    }
+
+    override fun prepare(onPrepared: () -> Unit) {
+        executor = Executors.newSingleThreadExecutor()
+        executor.execute {
+            if (!isConnected) {
+                initConnection()
+            }
+            onPrepared()
+        }
+    }
 
     override fun setOnFileManagerResultListener(listener: OnFileManagerResultListener) = Unit
 
-    override fun listDirectory(dirPath: String, forceRefresh: Boolean): List<FileInfo> = listOf()
-    override fun listParent(): List<FileInfo> = emptyList()
+    override fun listDirectory(dirPath: String, forceRefresh: Boolean): List<FileInfo> {
+        currentDir = dirPath
 
-    override fun getParentDirectoryPath(dir: String): String = ""
+        val converted: MutableList<FileInfo> = ArrayList(100)
+        val selector = LsEntrySelector { entry ->
+            val fileName = entry.filename
+            if (!fileName.matches(Regex("\\.+"))) {
+                converted.add(getFileInfoFromSftp(entry, dirPath))
+            }
+            LsEntrySelector.CONTINUE
+        }
 
-    override fun getCurrentlyListedFiles(): ArrayList<FileInfo> = arrayListOf<FileInfo>()
-    override fun putInCache(dirPath: String, files: List<FileInfo>) = Unit
+        sftpChannel.ls(dirPath, selector)
+
+        // TODO use comparator from preferences preferences
+        Collections.sort(converted, AlphaNumericComparator())
+
+        // Insert the listed directory in the cache
+        if (converted.isNotEmpty()) {
+            putInCache(dirPath, converted)
+        }
+
+        return converted
+    }
+
+    override fun getParentDirectoryPath(dir: String): String {
+        return dir.substring(0, dir.lastIndexOf(File.separatorChar))
+    }
+
+    override fun getCurrentlyListedFiles(): List<FileInfo> {
+        return filesCache[currentDir] ?: mutableListOf()
+    }
+
+    override fun exit() {
+        super.exit()
+        executor.shutdown()
+    }
 
 }

@@ -17,7 +17,16 @@ interface FileManager: Serializable {
     @WorkerThread
     fun listDirectory(dirPath: String, forceRefresh: Boolean = false): List<FileInfo>
     @WorkerThread
-    fun listParent(): List<FileInfo>
+    fun listParent(): List<FileInfo> {
+        val parentPath = getParentDirectoryPath(currentDir)
+        currentDir = parentPath
+        val cache = filesCache[parentPath]
+        if (cache != null) {
+            return cache
+        }
+
+        return listDirectory(parentPath)
+    }
 
     fun isOnRootDir(): Boolean {
         return currentDir == rootDirectoryPath
@@ -30,7 +39,26 @@ interface FileManager: Serializable {
     fun getParentDirectoryPath(dir: String): String
     fun getCurrentlyListedFiles(): List<FileInfo>
 
-    fun putInCache(dirPath: String, files: List<FileInfo>)
+    fun putInCache(dirPath: String, files: List<FileInfo>) {
+        if (filesCache.entries.size <= 10) {
+            filesCache[dirPath] = files
+        } else {
+            var keyToRemove = ""
+            for ((i, entry) in filesCache.entries.withIndex()) {
+                if (i == filesCache.entries.size / 2) {
+                    keyToRemove = entry.key
+                    break
+                }
+            }
+
+            if (keyToRemove != "") {
+                filesCache.remove(keyToRemove)
+            }
+
+            filesCache[dirPath] = files
+        }
+    }
+
     fun getCachedFolder(dirPath: String): List<FileInfo>? {
         currentDir = dirPath
         return filesCache[dirPath]

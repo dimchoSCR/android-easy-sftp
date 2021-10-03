@@ -21,6 +21,7 @@
     <dimen name="margin_base_2">2dp</dimen>
     <dimen name="margin_base_6">6dp</dimen>
     <dimen name="margin_base_8">8dp</dimen>
+    <dimen name="margin_base_16">16dp</dimen>
 
     <!--  Padding  -->
     <dimen name="padding_base_10">10dp</dimen>
