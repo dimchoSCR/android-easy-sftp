@@ -32,6 +32,7 @@ import org.koin.core.parameter.parametersOf
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
+import android.widget.PopupMenu
 import apps.dcoder.easysftp.extensions.isServiceRunning
 import apps.dcoder.easysftp.fragments.dialog.PasswordPromptDialog
 import apps.dcoder.easysftp.util.status.Status
@@ -259,6 +260,13 @@ class FileViewFragment: Fragment(), ListItemClickListener {
 
             fileManagerService.listDirectory(clickedFileInfo.absolutePath)
         }
+    }
+
+    override fun onLongClick(clickedItemIndex: Int, view: View) {
+        val popupMenu = PopupMenu(this.requireContext(), view)
+        popupMenu.inflate(R.menu.menu_file_manager_actions)
+        popupMenu.menu.removeItem(R.id.file_paste)
+        popupMenu.show()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {

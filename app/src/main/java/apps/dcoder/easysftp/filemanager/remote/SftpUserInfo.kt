@@ -1,4 +1,4 @@
-package apps.dcoder.easysftp.filemanager
+package apps.dcoder.easysftp.filemanager.remote
 
 import android.os.Handler
 import android.os.Looper

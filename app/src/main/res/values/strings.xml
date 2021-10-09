@@ -19,5 +19,8 @@
     <string name="password_for">Password for %1$s</string>
     <string name="path">Path</string>
     <string name="hint_folder_path">Folder path</string>
+    <string name="copy">Copy</string>
+    <string name="delete">Delete</string>
+    <string name="paste">Paste</string>
 
 </resources>

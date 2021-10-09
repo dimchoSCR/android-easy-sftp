@@ -3,16 +3,15 @@ package apps.dcoder.easysftp.services.android
 import CoroutineService
 import android.content.Intent
 import android.os.Binder
-import android.os.Handler
 import android.os.IBinder
-import android.os.Looper
 import android.util.Log
-import android.widget.Toast
+import apps.dcoder.easysftp.extensions.launchCancellable
 import apps.dcoder.easysftp.filemanager.FileManager
-import apps.dcoder.easysftp.filemanager.RemoteFileManager
+import apps.dcoder.easysftp.filemanager.remote.RemoteFileManager
 import apps.dcoder.easysftp.model.FileInfo
 import apps.dcoder.easysftp.util.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -48,6 +47,8 @@ class FileManagerService : CoroutineService(), KoinComponent {
 
     private lateinit var currentFileManager: FileManager
 
+    private var currentRunningJob: Job? = null
+
     override fun onStartService(intent: Intent?, flags: Int, startId: Int): Int {
         return START_STICKY
     }
@@ -60,15 +61,31 @@ class FileManagerService : CoroutineService(), KoinComponent {
         currentFileManager.prepare(onPrepared)
     }
 
-    fun listCurrentDirectory(forceRefresh: Boolean = false) = launch(Dispatchers.IO) {
+    private fun cancelCurrentAndDoAsync(action: suspend () -> Unit) {
+        currentRunningJob?.let {
+            launch(Dispatchers.IO) {
+                currentFileManager.onCurrentOperationCancelled()
+            }
+
+            it.cancel()
+            currentRunningJob = null
+        }
+
+        currentRunningJob = launchCancellable {
+            action()
+            currentRunningJob = null
+        }
+    }
+
+    fun listCurrentDirectory(forceRefresh: Boolean = false) = cancelCurrentAndDoAsync {
         sendOperationResult(currentFileManager.listCurrentDir(forceRefresh))
     }
 
-    fun listDirectory(dirPath: String) = launch(Dispatchers.IO) {
+    fun listDirectory(dirPath: String) = cancelCurrentAndDoAsync {
         sendOperationResult(currentFileManager.listDirectory(dirPath))
     }
 
-    fun listParent() = launch(Dispatchers.IO) {
+    fun listParent() = cancelCurrentAndDoAsync {
         sendOperationResult(currentFileManager.listParent())
     }
 

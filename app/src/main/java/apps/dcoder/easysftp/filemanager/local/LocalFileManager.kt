@@ -1,10 +1,13 @@
-package apps.dcoder.easysftp.filemanager
+package apps.dcoder.easysftp.filemanager.local
 
 import android.util.Log
+import apps.dcoder.easysftp.filemanager.AlphaNumericComparator
+import apps.dcoder.easysftp.filemanager.FileManager
+import apps.dcoder.easysftp.filemanager.OnFileManagerResultListener
 import apps.dcoder.easysftp.model.FileInfo
 import apps.dcoder.easysftp.model.getFileInfoFromFile
-import com.jcraft.jsch.UserInfo
 import java.io.File
+import java.io.InputStream
 import java.util.Collections
 import kotlin.collections.LinkedHashMap
 
@@ -59,10 +62,13 @@ class LocalFileManager(override val rootDirectoryPath: String): FileManager {
         return files
     }
 
+    override fun onCurrentOperationCancelled() = Unit
+
     override fun getCurrentlyListedFiles(): List<FileInfo> {
         return filesCache[currentDir] ?: mutableListOf()
     }
 
+    override fun paste(inputStream: InputStream, destinationDir: String) = Unit
     override fun getParentDirectoryPath(dir: String): String {
         return File(dir).parentFile?.absolutePath
             ?: throw NoSuchFileException(File(dir), null, "Directory $dir, has no parent!")

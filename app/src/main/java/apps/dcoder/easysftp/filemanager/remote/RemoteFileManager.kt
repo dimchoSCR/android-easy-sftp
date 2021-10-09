@@ -1,23 +1,29 @@
-package apps.dcoder.easysftp.filemanager
+package apps.dcoder.easysftp.filemanager.remote
 
 import android.util.Log
+import apps.dcoder.easysftp.filemanager.AlphaNumericComparator
+import apps.dcoder.easysftp.filemanager.FileManager
+import apps.dcoder.easysftp.filemanager.OnFileManagerResultListener
 import apps.dcoder.easysftp.model.FileInfo
 import apps.dcoder.easysftp.model.getFileInfoFromSftp
 import com.jcraft.jsch.*
 import com.jcraft.jsch.ChannelSftp.LsEntrySelector
 import java.io.File
+import java.io.InputStream
 import java.lang.Exception
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.locks.ReentrantLock
 import java.util.regex.Pattern
+import kotlin.concurrent.withLock
 
 class RemoteFileManager(fullyQualifiedPath: String) : FileManager {
-
     override val rootDirectoryPath: String
     override var currentDir: String = ""
     override val filesCache: LinkedHashMap<String, List<FileInfo>> = linkedMapOf()
 
+    private val lock = ReentrantLock()
     private val username: String
     private val ip: String
 
@@ -81,7 +87,12 @@ class RemoteFileManager(fullyQualifiedPath: String) : FileManager {
         executor = Executors.newSingleThreadExecutor()
         executor.execute {
             if (!isConnected) {
-                initConnection()
+                try {
+                    initConnection()
+                } catch (err: Exception) {
+                    Log.e("DMK", "Error while initialising session", err)
+                    return@execute
+                }
             }
             onPrepared()
         }
@@ -91,6 +102,11 @@ class RemoteFileManager(fullyQualifiedPath: String) : FileManager {
 
     override fun listDirectory(dirPath: String, forceRefresh: Boolean): List<FileInfo> {
         currentDir = dirPath
+        val cache = filesCache[dirPath]
+        if (!forceRefresh && cache != null) {
+            Log.wtf(this::class.java.simpleName, "Read from cache")
+            return cache
+        }
 
         val converted: MutableList<FileInfo> = ArrayList(100)
         val selector = LsEntrySelector { entry ->
@@ -101,7 +117,15 @@ class RemoteFileManager(fullyQualifiedPath: String) : FileManager {
             LsEntrySelector.CONTINUE
         }
 
-        sftpChannel.ls(dirPath, selector)
+        try {
+            // Run op only when there is no cancel in progress
+            lock.withLock {
+                sftpChannel.ls(dirPath, selector)
+            }
+        } catch (err: Exception) {
+            Log.e(this::class.java.simpleName, "Exception occurred while listing files", err)
+            return emptyList()
+        }
 
         // TODO use comparator from preferences preferences
         Collections.sort(converted, AlphaNumericComparator())
@@ -114,6 +138,21 @@ class RemoteFileManager(fullyQualifiedPath: String) : FileManager {
         return converted
     }
 
+    override fun onCurrentOperationCancelled() {
+        Log.d("DMK", "Op cancelled")
+        // Block any new operations from running
+        lock.withLock {
+            if (::sftpChannel.isInitialized) {
+                sftpChannel.exit()
+            }
+
+            val newChannel = session.openChannel("sftp")
+            newChannel.connect()
+
+            sftpChannel = newChannel as ChannelSftp
+        }
+    }
+
     override fun getParentDirectoryPath(dir: String): String {
         return dir.substring(0, dir.lastIndexOf(File.separatorChar))
     }
@@ -122,8 +161,14 @@ class RemoteFileManager(fullyQualifiedPath: String) : FileManager {
         return filesCache[currentDir] ?: mutableListOf()
     }
 
+    override fun paste(inputStream: InputStream, destinationDir: String) {
+        sftpChannel.put(inputStream, destinationDir)
+    }
+
     override fun exit() {
         super.exit()
+        sftpChannel.quit()
+        session.disconnect()
         executor.shutdown()
     }
 

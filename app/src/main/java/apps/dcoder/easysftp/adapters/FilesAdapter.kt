@@ -22,7 +22,13 @@ class FilesAdapter(
         val itemView = LayoutInflater.from(parent.context)
             .inflate(R.layout.rv_file_item, parent, false)
 
-        return FilesViewHolder(itemView)
+        val filesViewHolder = FilesViewHolder(itemView)
+        itemView.setOnLongClickListener {
+            listener.onLongClick(filesViewHolder.absoluteAdapterPosition, it)
+            return@setOnLongClickListener true
+        }
+
+        return filesViewHolder
     }
 
     override fun getItemCount(): Int {

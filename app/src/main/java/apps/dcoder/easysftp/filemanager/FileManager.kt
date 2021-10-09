@@ -2,6 +2,7 @@ package apps.dcoder.easysftp.filemanager
 
 import androidx.annotation.WorkerThread
 import apps.dcoder.easysftp.model.FileInfo
+import java.io.InputStream
 import java.io.Serializable
 import java.util.ArrayList
 import java.util.LinkedHashMap
@@ -27,6 +28,8 @@ interface FileManager: Serializable {
 
         return listDirectory(parentPath)
     }
+
+    fun onCurrentOperationCancelled()
 
     fun isOnRootDir(): Boolean {
         return currentDir == rootDirectoryPath
@@ -63,6 +66,8 @@ interface FileManager: Serializable {
         currentDir = dirPath
         return filesCache[dirPath]
     }
+
+    fun paste(inputStream: InputStream, destinationDir: String)
 
     fun exit() = filesCache.clear()
 }

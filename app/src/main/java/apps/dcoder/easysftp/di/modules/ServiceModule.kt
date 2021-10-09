@@ -1,7 +1,7 @@
 package apps.dcoder.easysftp.di.modules
 
-import apps.dcoder.easysftp.filemanager.LocalFileManager
-import apps.dcoder.easysftp.filemanager.RemoteFileManager
+import apps.dcoder.easysftp.filemanager.local.LocalFileManager
+import apps.dcoder.easysftp.filemanager.remote.RemoteFileManager
 import apps.dcoder.easysftp.services.android.FileManagerType
 import apps.dcoder.easysftp.services.storage.SharedPrefsStorageService
 import apps.dcoder.easysftp.services.storage.StorageDiscoveryService
