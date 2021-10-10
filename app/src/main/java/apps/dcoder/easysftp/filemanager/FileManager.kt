@@ -1,6 +1,7 @@
 package apps.dcoder.easysftp.filemanager
 
 import androidx.annotation.WorkerThread
+import apps.dcoder.easysftp.filemanager.remote.FileOperationStatusListener
 import apps.dcoder.easysftp.model.FileInfo
 import java.io.InputStream
 import java.io.Serializable
@@ -8,6 +9,8 @@ import java.util.ArrayList
 import java.util.LinkedHashMap
 
 interface FileManager: Serializable {
+    var fileOpListener: FileOperationStatusListener?
+
     val rootDirectoryPath: String
     val filesCache: LinkedHashMap<String, List<FileInfo>>
 
@@ -67,7 +70,9 @@ interface FileManager: Serializable {
         return filesCache[dirPath]
     }
 
-    fun paste(inputStream: InputStream, destinationDir: String)
+    fun getInputStream(sourceFilePath: String): InputStream
+
+    fun paste(sourceFilePath: String, destFileName: String, destinationDir: String = currentDir)
 
     fun exit() = filesCache.clear()
 }

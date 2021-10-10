@@ -22,5 +22,6 @@
     <string name="copy">Copy</string>
     <string name="delete">Delete</string>
     <string name="paste">Paste</string>
+    <string name="rename">Rename</string>
 
 </resources>

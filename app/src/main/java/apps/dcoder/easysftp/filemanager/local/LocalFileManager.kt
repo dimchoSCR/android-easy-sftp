@@ -4,17 +4,21 @@ import android.util.Log
 import apps.dcoder.easysftp.filemanager.AlphaNumericComparator
 import apps.dcoder.easysftp.filemanager.FileManager
 import apps.dcoder.easysftp.filemanager.OnFileManagerResultListener
+import apps.dcoder.easysftp.filemanager.remote.FileOperationStatusListener
 import apps.dcoder.easysftp.model.FileInfo
 import apps.dcoder.easysftp.model.getFileInfoFromFile
 import java.io.File
+import java.io.FileInputStream
 import java.io.InputStream
 import java.util.Collections
 import kotlin.collections.LinkedHashMap
 
-class LocalFileManager(override val rootDirectoryPath: String): FileManager {
+class LocalFileManager(override var rootDirectoryPath: String): FileManager {
 
     private var fileManagerResultListener: OnFileManagerResultListener? = null
+
     override var currentDir: String = rootDirectoryPath
+    override var fileOpListener: FileOperationStatusListener? = null
 
     override val filesCache: LinkedHashMap<String, List<FileInfo>> = linkedMapOf()
 
@@ -68,9 +72,17 @@ class LocalFileManager(override val rootDirectoryPath: String): FileManager {
         return filesCache[currentDir] ?: mutableListOf()
     }
 
-    override fun paste(inputStream: InputStream, destinationDir: String) = Unit
+    override fun getInputStream(sourceFilePath: String): InputStream {
+        return FileInputStream(sourceFilePath)
+    }
+
+    override fun paste(sourceFilePath: String, destFileName: String, destinationDir: String) = Unit
     override fun getParentDirectoryPath(dir: String): String {
         return File(dir).parentFile?.absolutePath
             ?: throw NoSuchFileException(File(dir), null, "Directory $dir, has no parent!")
+    }
+
+    fun changeLocalRootDir(newRoot: String) {
+        rootDirectoryPath = newRoot
     }
 }

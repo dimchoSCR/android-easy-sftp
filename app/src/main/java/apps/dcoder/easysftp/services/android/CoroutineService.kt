@@ -23,7 +23,6 @@ abstract class CoroutineService : Service(), CoroutineScope {
         PendingIntent.FLAG_CANCEL_CURRENT
     )
 
-
     var isRunning: Boolean = false
         private set
 

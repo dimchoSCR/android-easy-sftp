@@ -1,12 +1,17 @@
 package apps.dcoder.easysftp.services.android
 
 import CoroutineService
+import android.app.NotificationManager
+import android.content.Context
 import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
 import android.util.Log
 import apps.dcoder.easysftp.extensions.launchCancellable
+import apps.dcoder.easysftp.filemanager.ClipBoardManager
 import apps.dcoder.easysftp.filemanager.FileManager
+import apps.dcoder.easysftp.filemanager.local.LocalFileManager
+import apps.dcoder.easysftp.filemanager.remote.FileOperationStatusListener
 import apps.dcoder.easysftp.filemanager.remote.RemoteFileManager
 import apps.dcoder.easysftp.model.FileInfo
 import apps.dcoder.easysftp.util.*
@@ -16,6 +21,12 @@ import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.parameter.parametersOf
+
+import android.app.Notification
+import android.app.NotificationChannel
+import android.graphics.Color
+import android.os.Build
+import androidx.core.app.NotificationCompat
 
 enum class FileManagerType {
     LOCAL, REMOTE
@@ -44,6 +55,10 @@ class FileManagerService : CoroutineService(), KoinComponent {
 
     private val _sshPassRequestEvent = MutableLiveEvent<Unit>()
     val sshPassRequestEvent: LiveEvent<Unit> = _sshPassRequestEvent
+
+    private val notificationManager: NotificationManager by lazy {
+        application.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    }
 
     private lateinit var currentFileManager: FileManager
 
@@ -136,6 +151,20 @@ class FileManagerService : CoroutineService(), KoinComponent {
         (remoteFileManager as RemoteFileManager).setSshPassword(pass)
     }
 
+    fun isLocal(): Boolean {
+        return currentFileManager is LocalFileManager
+    }
+
+    fun doPaste(clipBoardEntry: ClipBoardManager.ClipBoardEntry) = launch(Dispatchers.IO) {
+        val inputStream = if (clipBoardEntry.isLocalFile) {
+            localFileManager.getInputStream(clipBoardEntry.filePath)
+        } else {
+            remoteFileManager.getInputStream(clipBoardEntry.filePath)
+        }
+
+        currentFileManager.paste(clipBoardEntry.filePath, clipBoardEntry.fileNameWithExt)
+    }
+
     inner class FileManagerBinder : Binder() {
         fun getService(rootDirectory: String): FileManagerService {
             if (rootDirectory.contains('@')) {
@@ -147,11 +176,69 @@ class FileManagerService : CoroutineService(), KoinComponent {
                 }
             } else {
                 localRootDirPath = rootDirectory
-                currentFileManager = localFileManager
+                val localFm = localFileManager as LocalFileManager
+                localFm.changeLocalRootDir(rootDirectory)
+                localFm.currentDir = rootDirectory
+
+                currentFileManager = localFm
             }
+
+            initFileManagerListeners()
 
             return this@FileManagerService
         }
+    }
+
+    private fun initFileManagerListeners() {
+        val builder = getProgressNotificationBuilder("File Manager Operation", "Copying")
+
+        currentFileManager.fileOpListener = object : FileOperationStatusListener {
+            override fun onOpStarted() {
+                builder.setProgress(100, 0, false)
+                startForeground(NOTIFICATION_ID, builder.build())
+            }
+
+            override fun onUpdateOpProgress(bytesTransferred: Long, totalBytes: Long) {
+                val progress = (bytesTransferred * 100 / totalBytes).toInt()
+                Log.d("Copy", "Progress $progress")
+                builder.setProgress(100, progress, false)
+                notificationManager.notify(NOTIFICATION_ID, builder.build())
+            }
+
+            override fun onOpComplete() {
+                builder.setContentTitle("Operation Completed")
+                    .setContentText("")
+                    .setProgress(0, 0, false)
+
+                notificationManager.notify(NOTIFICATION_ID, builder.build())
+                ClipBoardManager.clear()
+                listCurrentDirectory(true)
+                stopForeground(true)
+            }
+
+        }
+    }
+
+    private fun getProgressNotificationBuilder(title: String, opText: String): NotificationCompat.Builder {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "Sftp Operations",
+                NotificationManager.IMPORTANCE_NONE
+            )
+            channel.lightColor = Color.BLUE
+            channel.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
+
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val notificationAction =
+            NotificationCompat.Action.Builder(null, "Stop service", getStopSelfIntent(this::class.java)).build()
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle(title)
+            .setContentText(opText)
+            .setSmallIcon(android.R.drawable.stat_sys_download)
+            .addAction(notificationAction)
     }
 
     override fun onDestroy() {
@@ -164,5 +251,14 @@ class FileManagerService : CoroutineService(), KoinComponent {
         if (remoteRootDirPath != "") {
             remoteFileManager.exit()
         }
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+
+    }
+
+    companion object {
+        private const val CHANNEL_ID = "FileManager"
+        private const val NOTIFICATION_ID = 1001
     }
 }

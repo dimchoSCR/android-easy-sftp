@@ -34,6 +34,7 @@ import android.os.Handler
 import android.os.Looper
 import android.widget.PopupMenu
 import apps.dcoder.easysftp.extensions.isServiceRunning
+import apps.dcoder.easysftp.filemanager.ClipBoardManager
 import apps.dcoder.easysftp.fragments.dialog.PasswordPromptDialog
 import apps.dcoder.easysftp.util.status.Status
 import apps.dcoder.easysftp.services.android.FileManagerOperationResult
@@ -237,6 +238,8 @@ class FileViewFragment: Fragment(), ListItemClickListener {
         } else {
             tvEmpty.visibility = View.GONE
         }
+
+        viewModel.lastListedDir = fileManagerService.getCurrentDir()
     }
 
     override fun onListItemClick(clickedItemIndex: Int) {
@@ -244,16 +247,7 @@ class FileViewFragment: Fragment(), ListItemClickListener {
 
         if (clickedFileInfo.isDirectory) {
             viewModel.updateProgressState(ProgressState.LOADING)
-
-            // Acquire current list item's position and offset
-            // Store the data in a stack
-            // Then list the new directory
-            val childAtTopOfList: View = recyclerView.getChildAt(0)
-            val prevItemPos = recyclerView.getChildAdapterPosition(childAtTopOfList)
-            val prevScrollOffset = childAtTopOfList.top
-
-            // Save the scroll position for this directory
-            viewModel.positionStack.add(Pair(prevItemPos, prevScrollOffset))
+            saveRvPosition()
 
             // Reset position variables
             viewModel.resetRvPositions()
@@ -262,10 +256,43 @@ class FileViewFragment: Fragment(), ListItemClickListener {
         }
     }
 
+    private fun saveRvPosition() {
+        // Acquire current list item's position and offset
+        // Store the data in a stack
+        // Then list the new directory
+        val childAtTopOfList: View = recyclerView.getChildAt(0)
+        val prevItemPos = recyclerView.getChildAdapterPosition(childAtTopOfList)
+        val prevScrollOffset = childAtTopOfList.top
+
+        // Save the scroll position for this directory
+        viewModel.positionStack.add(Pair(prevItemPos, prevScrollOffset))
+    }
+
     override fun onLongClick(clickedItemIndex: Int, view: View) {
         val popupMenu = PopupMenu(this.requireContext(), view)
         popupMenu.inflate(R.menu.menu_file_manager_actions)
-        popupMenu.menu.removeItem(R.id.file_paste)
+
+        if (ClipBoardManager.isClipboardEmpty) {
+            popupMenu.menu.removeItem(R.id.file_paste)
+        }
+
+        popupMenu.setOnMenuItemClickListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.file_copy -> {
+                    val clickedFileInfo: FileInfo = fileManagerService.getCurrentlyListedFiles()[clickedItemIndex]
+                    ClipBoardManager.saveFilePath(fileManagerService.isLocal(), clickedFileInfo.absolutePath)
+                }
+
+                R.id.file_paste -> {
+                    ClipBoardManager.clipBoardEntry?.let {
+                        fileManagerService.doPaste(it)
+                    }
+                }
+            }
+
+            true
+        }
+
         popupMenu.show()
     }
 
@@ -277,18 +304,6 @@ class FileViewFragment: Fragment(), ListItemClickListener {
     private fun onBackPressed() {
         if (!fileManagerService.isOnRootDir()) {
             recyclerView.stopScroll()
-
-            // Stop the result of a currently running task
-//            val idOFTaskToCancel = fileManager.findIdOfTaskToCancel()
-//            if (idOFTaskToCancel != null) {
-//                fileManager.cancelTaskWithID(idOFTaskToCancel)
-//                fileManager.clearPendingTaskResultsFromActivity(
-//                    RemoteFileHandlerThread.RESULT_LISTED_DIRECTORY
-//                )
-//            }
-
-            // Restore the lists previous state
-            viewModel.popSavedScrollPositions()
 
             // Gets the parent directory of the currentDirectory
             // Then updates the currentDirPath reference
@@ -309,11 +324,6 @@ class FileViewFragment: Fragment(), ListItemClickListener {
             viewModel.serviceHasBeenKilled = true
             bindFileManagerService()
         }
-    }
-
-    override fun onStop() {
-        super.onStop()
-        viewModel.lastListedDir = fileManagerService.getCurrentDir()
     }
 
     override fun onDestroy() {

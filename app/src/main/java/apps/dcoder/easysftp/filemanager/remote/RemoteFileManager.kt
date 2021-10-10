@@ -19,8 +19,10 @@ import java.util.regex.Pattern
 import kotlin.concurrent.withLock
 
 class RemoteFileManager(fullyQualifiedPath: String) : FileManager {
-    override val rootDirectoryPath: String
+    override var fileOpListener: FileOperationStatusListener? = null
     override var currentDir: String = ""
+
+    override val rootDirectoryPath: String
     override val filesCache: LinkedHashMap<String, List<FileInfo>> = linkedMapOf()
 
     private val lock = ReentrantLock()
@@ -161,8 +163,18 @@ class RemoteFileManager(fullyQualifiedPath: String) : FileManager {
         return filesCache[currentDir] ?: mutableListOf()
     }
 
-    override fun paste(inputStream: InputStream, destinationDir: String) {
-        sftpChannel.put(inputStream, destinationDir)
+    override fun getInputStream(sourceFilePath: String): InputStream {
+        return sftpChannel.get(sourceFilePath)
+    }
+
+    override fun paste(sourceFilePath: String, destFileName: String, destinationDir: String) {
+        val destFile = "$destinationDir/$destFileName"
+        val progressMonitor = SftpProgressMonitor()
+        progressMonitor.sftpOpListener = this.fileOpListener
+
+        lock.withLock {
+            sftpChannel.put(sourceFilePath, destFile, progressMonitor)
+        }
     }
 
     override fun exit() {
