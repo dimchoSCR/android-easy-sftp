@@ -64,6 +64,9 @@ dependencies {
     // Jsch
     implementation deps.jsch
 
+    // RAR
+    implementation "com.github.junrar:junrar:7.4.0"
+
     // Testing
     testImplementation deps.jUnit.core
     androidTestImplementation deps.androidTest.ext

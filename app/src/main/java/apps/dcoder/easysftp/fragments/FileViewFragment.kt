@@ -33,6 +33,7 @@ import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import android.widget.PopupMenu
+import android.widget.Toast
 import apps.dcoder.easysftp.extensions.isServiceRunning
 import apps.dcoder.easysftp.filemanager.ClipBoardManager
 import apps.dcoder.easysftp.fragments.dialog.DialogActionListener
@@ -40,6 +41,7 @@ import apps.dcoder.easysftp.fragments.dialog.EditTextDialog
 import apps.dcoder.easysftp.fragments.dialog.PasswordPromptDialog
 import apps.dcoder.easysftp.util.status.Status
 import apps.dcoder.easysftp.services.android.FileManagerOperationResult
+import apps.dcoder.easysftp.util.Resource
 import org.koin.android.ext.android.inject
 
 class FileViewFragment: Fragment(), ListItemClickListener {
@@ -173,7 +175,7 @@ class FileViewFragment: Fragment(), ListItemClickListener {
         viewModel.progressState.consume(this.viewLifecycleOwner) {
             // If the cache is not empty and there are no files in the file manager
             // then the directory is empty
-            if (fileManagerService.getCurrentlyListedFiles().isEmpty() && it == ProgressState.IDLE) {
+            if (it == ProgressState.IDLE ) {//fileManagerService.getCurrentlyListedFiles().isEmpty() && ) {
                 filesView.tvEmpty.visibility = View.VISIBLE
             }
 
@@ -202,6 +204,20 @@ class FileViewFragment: Fragment(), ListItemClickListener {
 
         viewModel.eventPasswordSet.consume(this.viewLifecycleOwner) { pass ->
             fileManagerService.setRemotePassword(pass)
+        }
+
+        viewModel.archiveExtractionEvent.consume(this.viewLifecycleOwner) {
+            when (it.status) {
+                Status.LOADING -> {
+                    viewModel.updateProgressState(ProgressState.LOADING)
+                }
+
+                Status.SUCCESS -> {
+                    // TODO play with adapters and data sets again
+                    fileManagerService.listCurrentDirectory(true)
+                    viewModel.updateProgressState(ProgressState.IDLE)
+                }
+            }
         }
     }
 
@@ -260,6 +276,8 @@ class FileViewFragment: Fragment(), ListItemClickListener {
             viewModel.resetRvPositions()
 
             fileManagerService.listDirectory(clickedFileInfo.absolutePath)
+        } else {
+            viewModel.extractIfArchive(clickedFileInfo.absolutePath, clickedFileInfo.name)
         }
     }
 
