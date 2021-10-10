@@ -9,8 +9,10 @@ import apps.dcoder.easysftp.model.getFileInfoFromSftp
 import com.jcraft.jsch.*
 import com.jcraft.jsch.ChannelSftp.LsEntrySelector
 import java.io.File
+import java.io.FileNotFoundException
 import java.io.InputStream
 import java.lang.Exception
+import java.lang.IllegalStateException
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -174,6 +176,48 @@ class RemoteFileManager(fullyQualifiedPath: String) : FileManager {
 
         lock.withLock {
             sftpChannel.put(sourceFilePath, destFile, progressMonitor)
+        }
+    }
+
+    override fun rename(oldName: String, newName: String): FileInfo {
+        val files = filesCache[currentDir] ?: throw IllegalStateException("Directory is not in cache!")
+        val mutableFiles = files.toMutableList()
+
+        var indexOfRenamedFile = -1
+        // Remove file from cache
+        for (i in mutableFiles.indices) {
+            if (mutableFiles[i].name == oldName) {
+                indexOfRenamedFile = i
+            }
+        }
+
+        mutableFiles.removeAt(indexOfRenamedFile)
+
+        lock.withLock {
+            val oldPath = "$currentDir${File.separatorChar}$oldName"
+            val newPath = "$currentDir${File.separatorChar}$newName"
+
+            sftpChannel.rename(oldPath, newPath)
+
+            var renamedFileInfo: FileInfo? = null
+            val selector = LsEntrySelector { entry ->
+                val fileName = entry.filename
+                if (fileName == newName) {
+                    renamedFileInfo = getFileInfoFromSftp(entry, currentDir)
+                    return@LsEntrySelector LsEntrySelector.BREAK
+                }
+                LsEntrySelector.CONTINUE
+            }
+
+            sftpChannel.ls(currentDir, selector)
+
+            val fileInfo = renamedFileInfo ?: throw FileNotFoundException(newPath)
+            mutableFiles.add(indexOfRenamedFile, fileInfo)
+            // Sort files again and update cache
+            Collections.sort(mutableFiles, AlphaNumericComparator())
+            putInCache(currentDir, mutableFiles)
+
+            return fileInfo
         }
     }
 

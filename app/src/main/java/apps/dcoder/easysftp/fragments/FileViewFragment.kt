@@ -35,6 +35,8 @@ import android.os.Looper
 import android.widget.PopupMenu
 import apps.dcoder.easysftp.extensions.isServiceRunning
 import apps.dcoder.easysftp.filemanager.ClipBoardManager
+import apps.dcoder.easysftp.fragments.dialog.DialogActionListener
+import apps.dcoder.easysftp.fragments.dialog.EditTextDialog
 import apps.dcoder.easysftp.fragments.dialog.PasswordPromptDialog
 import apps.dcoder.easysftp.util.status.Status
 import apps.dcoder.easysftp.services.android.FileManagerOperationResult
@@ -208,6 +210,11 @@ class FileViewFragment: Fragment(), ListItemClickListener {
             is FileManagerOperationResult.ListOperationResult -> {
                 onFilesListed(opResult.files)
             }
+
+            is FileManagerOperationResult.RenameOperationResult -> {
+                val renamedIndex = viewModel.getAndResetRenameIndex()
+                filesAdapter.updateFileAt(renamedIndex, opResult.destIndex, opResult.renamedFileInfo)
+            }
         }
     }
 
@@ -276,11 +283,22 @@ class FileViewFragment: Fragment(), ListItemClickListener {
             popupMenu.menu.removeItem(R.id.file_paste)
         }
 
+        addMenuListener(clickedItemIndex, popupMenu)
+
+        popupMenu.show()
+    }
+
+    private fun addMenuListener(clickedItemIndex: Int, popupMenu: PopupMenu) {
+        val clickedFileInfo: FileInfo = fileManagerService.getCurrentlyListedFiles()[clickedItemIndex]
+
         popupMenu.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.file_copy -> {
-                    val clickedFileInfo: FileInfo = fileManagerService.getCurrentlyListedFiles()[clickedItemIndex]
-                    ClipBoardManager.saveFilePath(fileManagerService.isLocal(), clickedFileInfo.absolutePath)
+                    ClipBoardManager.saveFilePath(
+                        fileManagerService.isLocal(),
+                        clickedFileInfo.absolutePath,
+                        clickedFileInfo.name
+                    )
                 }
 
                 R.id.file_paste -> {
@@ -288,13 +306,36 @@ class FileViewFragment: Fragment(), ListItemClickListener {
                         fileManagerService.doPaste(it)
                     }
                 }
+
+                R.id.file_rename -> {
+                    val dialog = buildRenameDialog(clickedFileInfo.name)
+                    dialog.dialogClickActionListener = object : DialogActionListener<String> {
+                        override fun onDialogPositiveClick(result: String) {
+                            viewModel.setIndexOfFileRenamed(clickedItemIndex)
+                            fileManagerService.renameCurrent(clickedFileInfo.name, result)
+                        }
+                    }
+                    dialog.show(parentFragmentManager, TAG_RENAME_DIALOG)
+
+                }
             }
 
             true
         }
-
-        popupMenu.show()
     }
+
+    private fun buildRenameDialog(inputText: String): EditTextDialog {
+        val editTextDialog = EditTextDialog(
+            "Rename File",
+            getString(R.string.rename),
+            getString(R.string.cancel)
+        )
+
+        editTextDialog.inputFieldText = inputText
+
+        return editTextDialog
+    }
+
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
@@ -336,5 +377,6 @@ class FileViewFragment: Fragment(), ListItemClickListener {
 
     companion object {
         private const val TAG_PASSWORD_DIALOG = "TAG_PASSWORD_DIALOG"
+        private const val TAG_RENAME_DIALOG = "TAG_RENAME_DIALOG"
     }
 }

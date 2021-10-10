@@ -55,6 +55,14 @@ class FilesAdapter(
         notifyDataSetChanged()
     }
 
+    fun updateFileAt(index: Int, newIndex: Int, newFileInfo: FileInfo) {
+        files.removeAt(index)
+        notifyItemRemoved(index)
+
+        files.add(newIndex, newFileInfo)
+        notifyItemInserted(newIndex)
+    }
+
     inner class FilesViewHolder(itemView: View)
         : RecyclerView.ViewHolder(itemView), View.OnClickListener {
 

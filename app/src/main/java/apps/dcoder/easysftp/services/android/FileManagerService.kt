@@ -34,6 +34,7 @@ enum class FileManagerType {
 
 sealed class FileManagerOperationResult private constructor() {
     data class ListOperationResult(val files: List<FileInfo>): FileManagerOperationResult()
+    data class RenameOperationResult(val renamedFileInfo: FileInfo, val destIndex: Int): FileManagerOperationResult()
 }
 
 class FileManagerService : CoroutineService(), KoinComponent {
@@ -241,6 +242,20 @@ class FileManagerService : CoroutineService(), KoinComponent {
             .addAction(notificationAction)
     }
 
+    fun renameCurrent(oldName: String, newName: String) = launch(Dispatchers.IO) {
+        // TODO Handle op errors
+        val renamedFileInfo = currentFileManager.rename(oldName, newName)
+        val cachedFiles = currentFileManager.getCachedFolder(currentFileManager.currentDir)
+        if (cachedFiles == null) {
+            Log.e("DMK", "Error while renaming file")
+            return@launch
+        }
+
+        val sortedIndexOfRenamedFile = cachedFiles.indexOf(renamedFileInfo)
+        val result = FileManagerOperationResult.RenameOperationResult(renamedFileInfo, sortedIndexOfRenamedFile)
+        _fileManagerOperationLiveData.dispatchSuccessOnMain(result)
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         Log.d("DMK", "Exiting file managers")
@@ -251,10 +266,6 @@ class FileManagerService : CoroutineService(), KoinComponent {
         if (remoteRootDirPath != "") {
             remoteFileManager.exit()
         }
-    }
-
-    override fun onTaskRemoved(rootIntent: Intent?) {
-
     }
 
     companion object {

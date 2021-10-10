@@ -74,5 +74,7 @@ interface FileManager: Serializable {
 
     fun paste(sourceFilePath: String, destFileName: String, destinationDir: String = currentDir)
 
+    fun rename(oldName: String, newName: String): FileInfo
+
     fun exit() = filesCache.clear()
 }

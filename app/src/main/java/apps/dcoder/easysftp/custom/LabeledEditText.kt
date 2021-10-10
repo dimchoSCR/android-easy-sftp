@@ -113,4 +113,20 @@ class LabeledEditText(context: Context, private val attrs: AttributeSet) : Linea
     fun setInputType(inputType: Int) {
         editText.inputType = inputType
     }
+
+    fun setText(text: String) {
+        editText.setText(text)
+    }
+
+    fun setHint(hint: String) {
+        editText.hint = hint
+    }
+
+    fun hideLabel() {
+        label.visibility = View.GONE
+    }
+
+    fun setLabelText(text: String) {
+        label.text = text
+    }
 }

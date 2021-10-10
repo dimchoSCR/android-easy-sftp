@@ -17,6 +17,7 @@ class FileViewViewModel(rootDirPath: String) : ViewModel(), DialogActionListener
 
     private var prevItemPos = 0
     private var prevScrollOffset = 0
+    private var indexOfRenamedFile = -1
 
     private val _progressState = MutableLiveEvent<ProgressState>(Event(ProgressState.LOADING))
     val progressState: LiveEvent<ProgressState> = _progressState
@@ -28,6 +29,17 @@ class FileViewViewModel(rootDirPath: String) : ViewModel(), DialogActionListener
     var shouldUnbindFileService = false
     var lastListedDir: String = rootDirPath
     var serviceHasBeenKilled: Boolean = false
+
+    fun setIndexOfFileRenamed(index: Int) {
+        indexOfRenamedFile = index
+    }
+
+    fun getAndResetRenameIndex(): Int {
+        val indexOfRenamedFile = this.indexOfRenamedFile
+        this.indexOfRenamedFile = -1
+
+        return indexOfRenamedFile
+    }
 
     fun updateProgressState(progressState: ProgressState) {
         _progressState.value = Event(progressState)

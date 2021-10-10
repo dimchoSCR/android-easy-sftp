@@ -10,6 +10,7 @@ import apps.dcoder.easysftp.model.getFileInfoFromFile
 import java.io.File
 import java.io.FileInputStream
 import java.io.InputStream
+import java.lang.IllegalStateException
 import java.util.Collections
 import kotlin.collections.LinkedHashMap
 
@@ -77,6 +78,32 @@ class LocalFileManager(override var rootDirectoryPath: String): FileManager {
     }
 
     override fun paste(sourceFilePath: String, destFileName: String, destinationDir: String) = Unit
+
+    override fun rename(oldName: String, newName: String): FileInfo {
+        val files = filesCache[currentDir] ?: throw IllegalStateException("Directory is not in cache!")
+        val mutableFiles = files.toMutableList()
+        val resultFile = File(currentDir, newName)
+        var indexOfRenamedFile = -1
+
+        // Remove file from cache
+        for (i in mutableFiles.indices) {
+            if (mutableFiles[i].name == oldName) {
+                indexOfRenamedFile = i
+            }
+        }
+
+        mutableFiles.removeAt(indexOfRenamedFile)
+
+        File(currentDir, oldName).renameTo(resultFile)
+        val resultFileInfo = getFileInfoFromFile(resultFile)
+
+        mutableFiles.add(indexOfRenamedFile, resultFileInfo)
+        Collections.sort(mutableFiles, AlphaNumericComparator())
+        putInCache(currentDir, mutableFiles)
+
+        return resultFileInfo
+    }
+
     override fun getParentDirectoryPath(dir: String): String {
         return File(dir).parentFile?.absolutePath
             ?: throw NoSuchFileException(File(dir), null, "Directory $dir, has no parent!")
