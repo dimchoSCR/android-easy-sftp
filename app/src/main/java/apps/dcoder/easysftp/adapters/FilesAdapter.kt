@@ -56,11 +56,15 @@ class FilesAdapter(
     }
 
     fun updateFileAt(index: Int, newIndex: Int, newFileInfo: FileInfo) {
-        files.removeAt(index)
-        notifyItemRemoved(index)
+        removeFile(index)
 
         files.add(newIndex, newFileInfo)
         notifyItemInserted(newIndex)
+    }
+
+    fun removeFile(index: Int) {
+        files.removeAt(index)
+        notifyItemRemoved(index)
     }
 
     inner class FilesViewHolder(itemView: View)

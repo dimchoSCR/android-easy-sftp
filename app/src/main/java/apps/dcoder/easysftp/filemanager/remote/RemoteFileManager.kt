@@ -180,18 +180,7 @@ class RemoteFileManager(fullyQualifiedPath: String) : FileManager {
     }
 
     override fun rename(oldName: String, newName: String): FileInfo {
-        val files = filesCache[currentDir] ?: throw IllegalStateException("Directory is not in cache!")
-        val mutableFiles = files.toMutableList()
-
-        var indexOfRenamedFile = -1
-        // Remove file from cache
-        for (i in mutableFiles.indices) {
-            if (mutableFiles[i].name == oldName) {
-                indexOfRenamedFile = i
-            }
-        }
-
-        mutableFiles.removeAt(indexOfRenamedFile)
+        removeFileFromCache(oldName, currentDir)
 
         lock.withLock {
             val oldPath = "$currentDir${File.separatorChar}$oldName"
@@ -211,14 +200,58 @@ class RemoteFileManager(fullyQualifiedPath: String) : FileManager {
 
             sftpChannel.ls(currentDir, selector)
 
+            val files = filesCache[currentDir] ?: throw IllegalStateException("Directory is not in cache!")
+            val mutableFiles = files.toMutableList()
             val fileInfo = renamedFileInfo ?: throw FileNotFoundException(newPath)
-            mutableFiles.add(indexOfRenamedFile, fileInfo)
+            mutableFiles.add(fileInfo)
             // Sort files again and update cache
             Collections.sort(mutableFiles, AlphaNumericComparator())
             putInCache(currentDir, mutableFiles)
 
             return fileInfo
         }
+    }
+
+    override fun delete(filePath: String) {
+        lock.withLock {
+            val lsStat = sftpChannel.lstat(filePath)
+            if (lsStat.isDir) {
+                deleteDirContents(filePath)
+            } else {
+                sftpChannel.rm(filePath)
+            }
+
+            val fileName = filePath.substring(filePath.lastIndexOf("/") + 1)
+            removeFileFromCache(fileName, currentDir)
+        }
+    }
+
+    private fun deleteDirContents(dirPath: String) {
+        val converted: MutableList<FileInfo> = ArrayList(100)
+        val selector = LsEntrySelector { entry ->
+            val fileName = entry.filename
+            if (!fileName.matches(Regex("\\.+"))) {
+                converted.add(getFileInfoFromSftp(entry, dirPath))
+            }
+            LsEntrySelector.CONTINUE
+        }
+
+        try {
+            sftpChannel.ls(dirPath, selector)
+        } catch (err: Exception) {
+            Log.e("DMK", "No read permisison for directory: $dirPath")
+            return
+        }
+
+        for (file in converted) {
+            if (file.isDirectory) {
+                deleteDirContents(file.absolutePath)
+            } else {
+                sftpChannel.rm(file.absolutePath)
+            }
+        }
+
+        sftpChannel.rmdir(dirPath)
     }
 
     override fun exit() {

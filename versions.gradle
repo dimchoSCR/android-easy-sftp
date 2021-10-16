@@ -36,7 +36,7 @@ versions.power_mock_mockito_api = "2.0.2"
 versions.power_mock = "2.0.5"
 versions.livedataExt = "2.2.0"
 
-versions.jsch = "0.1.54"
+versions.jsch = "0.1.55"
 
 def support = [:]
 support.app_compat = "androidx.appcompat:appcompat:$versions.appcompat"

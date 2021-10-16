@@ -80,28 +80,50 @@ class LocalFileManager(override var rootDirectoryPath: String): FileManager {
     override fun paste(sourceFilePath: String, destFileName: String, destinationDir: String) = Unit
 
     override fun rename(oldName: String, newName: String): FileInfo {
-        val files = filesCache[currentDir] ?: throw IllegalStateException("Directory is not in cache!")
-        val mutableFiles = files.toMutableList()
         val resultFile = File(currentDir, newName)
-        var indexOfRenamedFile = -1
-
-        // Remove file from cache
-        for (i in mutableFiles.indices) {
-            if (mutableFiles[i].name == oldName) {
-                indexOfRenamedFile = i
-            }
-        }
-
-        mutableFiles.removeAt(indexOfRenamedFile)
+        removeFileFromCache(oldName, currentDir)
 
         File(currentDir, oldName).renameTo(resultFile)
-        val resultFileInfo = getFileInfoFromFile(resultFile)
 
-        mutableFiles.add(indexOfRenamedFile, resultFileInfo)
+        val resultFileInfo = getFileInfoFromFile(resultFile)
+        val files = filesCache[currentDir] ?: throw IllegalStateException("Directory is not in cache!")
+        val mutableFiles = files.toMutableList()
+
+        mutableFiles.add(resultFileInfo)
         Collections.sort(mutableFiles, AlphaNumericComparator())
         putInCache(currentDir, mutableFiles)
 
         return resultFileInfo
+    }
+
+    override fun delete(filePath: String) {
+        val fileToDelete = File(filePath)
+        if (fileToDelete.isDirectory) {
+            deleteDirContents(filePath)
+            // TODO remove children from cache as well
+            fileToDelete.delete()
+        } else {
+            fileToDelete.delete()
+        }
+
+        val fileName = filePath.substring(filePath.lastIndexOf("/") + 1)
+        removeFileFromCache(fileName, currentDir)
+    }
+
+    private fun deleteDirContents(dirPath: String) {
+        val fileToDelete = File(dirPath)
+        val dirFiles = fileToDelete.listFiles()
+        if (dirFiles != null) {
+            for (file in dirFiles) {
+                if (file.isDirectory) {
+                    deleteDirContents(file.absolutePath)
+                } else {
+                    file.delete()
+                }
+            }
+        }
+
+        fileToDelete.delete()
     }
 
     override fun getParentDirectoryPath(dir: String): String {

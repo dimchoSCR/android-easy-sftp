@@ -35,6 +35,7 @@ class FileViewViewModel(rootDirPath: String) : ViewModel(), DialogActionListener
     val positionStack: Stack<Pair<Int, Int>> = Stack()
     var shouldUnbindFileService = false
     var lastListedDir: String = rootDirPath
+    private var lastClickedItemIndex = -1
     var serviceHasBeenKilled: Boolean = false
 
     fun setIndexOfFileRenamed(index: Int) {
@@ -46,6 +47,17 @@ class FileViewViewModel(rootDirPath: String) : ViewModel(), DialogActionListener
         this.indexOfRenamedFile = -1
 
         return indexOfRenamedFile
+    }
+
+    fun setLastClickedItemIndex(lastClickedIndex : Int) {
+        lastClickedItemIndex = lastClickedIndex
+    }
+
+    fun getLastClickedItemIndex(): Int {
+        val lastClicked = lastClickedItemIndex
+        lastClickedItemIndex = -1
+
+        return lastClicked
     }
 
     fun updateProgressState(progressState: ProgressState) {
@@ -70,8 +82,6 @@ class FileViewViewModel(rootDirPath: String) : ViewModel(), DialogActionListener
     }
 
     fun extractIfArchive(filePath: String, fileName: String) = viewModelScope.launch(Dispatchers.IO) {
-        _archiveExtractionEvent.dispatchLoadingOnMain()
-
         val indexOfLastDot = fileName.lastIndexOf('.')
         if (indexOfLastDot == -1) {
             Log.e("DMK", "File has nor file extension")
@@ -82,13 +92,15 @@ class FileViewViewModel(rootDirPath: String) : ViewModel(), DialogActionListener
         val filePathWithoutExt = filePath.removeSuffix(".$ext")
 
         // TODO extraction progress
-        when (ext) {
+        when (ext.lowercase()) {
             "zip" -> {
+                _archiveExtractionEvent.dispatchLoadingOnMain()
                 unzip(filePath, filePathWithoutExt)
                 _archiveExtractionEvent.dispatchSuccessOnMain(Unit)
             }
 
             "rar" -> {
+                _archiveExtractionEvent.dispatchLoadingOnMain()
                 unrar(filePath, filePathWithoutExt)
                 _archiveExtractionEvent.dispatchSuccessOnMain(Unit)
             }

@@ -35,6 +35,7 @@ enum class FileManagerType {
 sealed class FileManagerOperationResult private constructor() {
     data class ListOperationResult(val files: List<FileInfo>): FileManagerOperationResult()
     data class RenameOperationResult(val renamedFileInfo: FileInfo, val destIndex: Int): FileManagerOperationResult()
+    object DeleteOperationResult : FileManagerOperationResult()
 }
 
 class FileManagerService : CoroutineService(), KoinComponent {
@@ -254,6 +255,11 @@ class FileManagerService : CoroutineService(), KoinComponent {
         val sortedIndexOfRenamedFile = cachedFiles.indexOf(renamedFileInfo)
         val result = FileManagerOperationResult.RenameOperationResult(renamedFileInfo, sortedIndexOfRenamedFile)
         _fileManagerOperationLiveData.dispatchSuccessOnMain(result)
+    }
+
+    fun delete(filePath: String) = launch(Dispatchers.IO) {
+        currentFileManager.delete(filePath)
+        _fileManagerOperationLiveData.dispatchSuccessOnMain(FileManagerOperationResult.DeleteOperationResult)
     }
 
     override fun onDestroy() {

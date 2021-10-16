@@ -1,9 +1,6 @@
 package apps.dcoder.easysftp.fragments
 
 import android.app.ActivityManager
-import android.content.ComponentName
-import android.content.Context
-import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
@@ -29,7 +26,6 @@ import kotlinx.android.synthetic.main.fragment_file_view.*
 import kotlinx.android.synthetic.main.fragment_file_view.view.*
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
-import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import android.widget.PopupMenu
@@ -41,8 +37,8 @@ import apps.dcoder.easysftp.fragments.dialog.EditTextDialog
 import apps.dcoder.easysftp.fragments.dialog.PasswordPromptDialog
 import apps.dcoder.easysftp.util.status.Status
 import apps.dcoder.easysftp.services.android.FileManagerOperationResult
-import apps.dcoder.easysftp.util.Resource
 import org.koin.android.ext.android.inject
+import android.content.*
 
 class FileViewFragment: Fragment(), ListItemClickListener {
 
@@ -231,6 +227,11 @@ class FileViewFragment: Fragment(), ListItemClickListener {
                 val renamedIndex = viewModel.getAndResetRenameIndex()
                 filesAdapter.updateFileAt(renamedIndex, opResult.destIndex, opResult.renamedFileInfo)
             }
+
+            is FileManagerOperationResult.DeleteOperationResult -> {
+                val removedIndex = viewModel.getLastClickedItemIndex()
+                filesAdapter.removeFile(removedIndex)
+            }
         }
     }
 
@@ -335,6 +336,19 @@ class FileViewFragment: Fragment(), ListItemClickListener {
                     }
                     dialog.show(parentFragmentManager, TAG_RENAME_DIALOG)
 
+                }
+
+                R.id.file_delete -> {
+                    viewModel.setLastClickedItemIndex(clickedItemIndex)
+                    fileManagerService.delete(clickedFileInfo.absolutePath)
+                }
+
+                R.id.file_copy_name_to_clipboard -> {
+                    val clipboard: ClipboardManager = requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    val clip = ClipData.newPlainText("File path", clickedFileInfo.name)
+                    clipboard.setPrimaryClip(clip)
+
+                    Toast.makeText(requireContext(), "File name copied to clipboard", Toast.LENGTH_LONG).show()
                 }
             }
 

@@ -23,5 +23,6 @@
     <string name="delete">Delete</string>
     <string name="paste">Paste</string>
     <string name="rename">Rename</string>
+    <string name="copy_file_name_to_clipboard">Copy file name to clipboard</string>
 
 </resources>

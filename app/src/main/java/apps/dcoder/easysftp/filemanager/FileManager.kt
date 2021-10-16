@@ -5,7 +5,7 @@ import apps.dcoder.easysftp.filemanager.remote.FileOperationStatusListener
 import apps.dcoder.easysftp.model.FileInfo
 import java.io.InputStream
 import java.io.Serializable
-import java.util.ArrayList
+import java.lang.IllegalStateException
 import java.util.LinkedHashMap
 
 interface FileManager: Serializable {
@@ -70,11 +70,33 @@ interface FileManager: Serializable {
         return filesCache[dirPath]
     }
 
+    fun removeFileFromCache(fileName: String, dirPath: String) {
+        val files = filesCache[dirPath] ?: throw IllegalStateException("Directory is not in cache!")
+        filesCache.remove(dirPath)
+        val mutableFilesCache = files.toMutableList()
+        var indexOfRenamedFile = -1
+        // Remove file from cache
+        for (i in mutableFilesCache.indices) {
+            if (mutableFilesCache[i].name == fileName) {
+                indexOfRenamedFile = i
+            }
+        }
+
+        mutableFilesCache.removeAt(indexOfRenamedFile)
+        putInCache(dirPath, mutableFilesCache)
+    }
+
+    fun removeDirFromCache(dirPath: String) {
+        filesCache.remove(dirPath)
+    }
+
     fun getInputStream(sourceFilePath: String): InputStream
 
     fun paste(sourceFilePath: String, destFileName: String, destinationDir: String = currentDir)
 
     fun rename(oldName: String, newName: String): FileInfo
+
+    fun delete(filePath: String)
 
     fun exit() = filesCache.clear()
 }
