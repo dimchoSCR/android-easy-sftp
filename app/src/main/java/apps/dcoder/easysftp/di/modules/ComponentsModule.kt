@@ -9,10 +9,4 @@ import org.koin.dsl.module
 
 val componentsModule = module {
     factory { StorageAddDialogFragment(get<StorageListViewModel>()) }
-    factory { (serverAddress: String) ->
-        PasswordPromptDialog(
-            serverAddress,
-            get<FileViewViewModel> { parametersOf(serverAddress) }
-        )
-    }
 }

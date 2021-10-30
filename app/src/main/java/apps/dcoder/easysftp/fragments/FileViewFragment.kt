@@ -1,8 +1,6 @@
 package apps.dcoder.easysftp.fragments
 
 import android.app.ActivityManager
-import android.os.Bundle
-import android.os.IBinder
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -26,8 +24,6 @@ import kotlinx.android.synthetic.main.fragment_file_view.*
 import kotlinx.android.synthetic.main.fragment_file_view.view.*
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
-import android.os.Handler
-import android.os.Looper
 import android.widget.PopupMenu
 import android.widget.Toast
 import apps.dcoder.easysftp.extensions.isServiceRunning
@@ -37,18 +33,16 @@ import apps.dcoder.easysftp.fragments.dialog.EditTextDialog
 import apps.dcoder.easysftp.fragments.dialog.PasswordPromptDialog
 import apps.dcoder.easysftp.util.status.Status
 import apps.dcoder.easysftp.services.android.FileManagerOperationResult
-import org.koin.android.ext.android.inject
 import android.content.*
+import android.os.*
+import android.content.Intent
+import android.net.Uri
 
 class FileViewFragment: Fragment(), ListItemClickListener {
 
     private lateinit var animation: LayoutAnimationController
 
     private val viewModel: FileViewViewModel by viewModel {
-        parametersOf(requireArguments().getString(ARG_ROOT_DIR_PATH))
-    }
-
-    private val passPromptDialog: PasswordPromptDialog by inject {
         parametersOf(requireArguments().getString(ARG_ROOT_DIR_PATH))
     }
 
@@ -195,6 +189,14 @@ class FileViewFragment: Fragment(), ListItemClickListener {
         }
 
         fileManagerService.sshPassRequestEvent.consume(this.viewLifecycleOwner) {
+            val passPromptDialog = PasswordPromptDialog(
+                requireArguments().getString(ARG_ROOT_DIR_PATH, ""),
+                object : DialogActionListener<String> {
+                    override fun onDialogPositiveClick(result: String) {
+                        viewModel.onDialogPositiveClick(result)
+                    }
+                }
+            )
             passPromptDialog.show(parentFragmentManager, TAG_PASSWORD_DIALOG)
         }
 
@@ -215,6 +217,23 @@ class FileViewFragment: Fragment(), ListItemClickListener {
                 }
             }
         }
+
+        viewModel.eventDownloadSubs.consume(this.viewLifecycleOwner) {
+            val source = it
+            val downloadsDir = fileManagerService.getLocalDownloadsFolder()
+            Log.d("DMK", "Subs dir $downloadsDir")
+            fileManagerService.downloadFileFromRemote(source, "sub.srt", downloadsDir)
+        }
+
+        viewModel.eventPlayVideo.consume(this.viewLifecycleOwner) {
+            startActivityForResult(it, 42)
+        }
+
+        viewModel.eventInstallVLC.consume(this.viewLifecycleOwner) {
+            val goToMarket = Intent(Intent.ACTION_VIEW)
+                .setData(Uri.parse("market://details?id=${FileViewViewModel.VLC_PLAYER_PACKAGE}"))
+            startActivity(goToMarket)
+        }
     }
 
     private fun processFileManagerResult(opResult: FileManagerOperationResult) {
@@ -231,6 +250,15 @@ class FileViewFragment: Fragment(), ListItemClickListener {
             is FileManagerOperationResult.DeleteOperationResult -> {
                 val removedIndex = viewModel.getLastClickedItemIndex()
                 filesAdapter.removeFile(removedIndex)
+            }
+
+            is FileManagerOperationResult.RemoteDownloadOperationResult -> {
+                val downloadsDir = fileManagerService.getLocalDownloadsFolder()
+                viewModel.onSubtitlesLoaded(downloadsDir)
+            }
+
+            is FileManagerOperationResult.RemoteDownloadNoSuchFileResult -> {
+                viewModel.onSubtitlesLoaded(null)
             }
         }
     }
@@ -278,7 +306,7 @@ class FileViewFragment: Fragment(), ListItemClickListener {
 
             fileManagerService.listDirectory(clickedFileInfo.absolutePath)
         } else {
-            viewModel.extractIfArchive(clickedFileInfo.absolutePath, clickedFileInfo.name)
+            viewModel.handleFileType(clickedFileInfo.absolutePath, clickedFileInfo.name, fileManagerService.isLocal())
         }
     }
 

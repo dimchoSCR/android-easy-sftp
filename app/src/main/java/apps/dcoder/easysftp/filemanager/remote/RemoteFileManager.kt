@@ -165,8 +165,9 @@ class RemoteFileManager(fullyQualifiedPath: String) : FileManager {
         return filesCache[currentDir] ?: mutableListOf()
     }
 
-    override fun getInputStream(sourceFilePath: String): InputStream {
-        return sftpChannel.get(sourceFilePath)
+    override fun getInputStreamWithSize(sourceFilePath: String): Pair<InputStream, Long> {
+        val size = sftpChannel.lstat(sourceFilePath).size
+        return Pair(sftpChannel.get(sourceFilePath), size)
     }
 
     override fun paste(sourceFilePath: String, destFileName: String, destinationDir: String) {
@@ -210,6 +211,22 @@ class RemoteFileManager(fullyQualifiedPath: String) : FileManager {
 
             return fileInfo
         }
+    }
+
+    override fun exists(path: String): Boolean {
+        var exists = false
+        try {
+            sftpChannel.lstat(path)
+            exists = true
+        } catch (err : SftpException) {
+            if (err.id == ChannelSftp.SSH_FX_NO_SUCH_FILE) {
+                exists = false
+            }
+
+            Log.e(this::class.java.simpleName, "Could not determine if file exists!")
+        }
+
+        return exists
     }
 
     override fun delete(filePath: String) {

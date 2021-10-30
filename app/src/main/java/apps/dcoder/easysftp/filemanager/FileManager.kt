@@ -90,11 +90,13 @@ interface FileManager: Serializable {
         filesCache.remove(dirPath)
     }
 
-    fun getInputStream(sourceFilePath: String): InputStream
+    fun getInputStreamWithSize(sourceFilePath: String): Pair<InputStream, Long>
 
     fun paste(sourceFilePath: String, destFileName: String, destinationDir: String = currentDir)
 
     fun rename(oldName: String, newName: String): FileInfo
+
+    fun exists(path: String): Boolean
 
     fun delete(filePath: String)
 

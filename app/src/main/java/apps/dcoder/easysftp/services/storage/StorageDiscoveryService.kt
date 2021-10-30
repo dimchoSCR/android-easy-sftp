@@ -51,6 +51,20 @@ class StorageDiscoveryService(private val appContext: Context) {
         }
     }
 
+    fun discoverInternalStoragePath(): String? {
+        val mountedVolumes = discoverMountedStorageVolumes()
+        for (volume in mountedVolumes) {
+            val isRemovable = isVolumeRemovable(volume)
+            if (isRemovable) {
+                continue
+            }
+
+            return discoverVolumePath(volume)
+        }
+
+        return null
+    }
+
     @SuppressLint("DiscouragedPrivateApi")
     fun discoverVolumePath(storageVolume: StorageVolume): String {
         val pathFile = storageVolume.javaClass.getDeclaredField("mPath")

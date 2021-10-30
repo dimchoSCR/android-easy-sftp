@@ -7,9 +7,8 @@ import apps.dcoder.easysftp.filemanager.OnFileManagerResultListener
 import apps.dcoder.easysftp.filemanager.remote.FileOperationStatusListener
 import apps.dcoder.easysftp.model.FileInfo
 import apps.dcoder.easysftp.model.getFileInfoFromFile
-import java.io.File
-import java.io.FileInputStream
-import java.io.InputStream
+import apps.dcoder.easysftp.viewmodels.FileViewViewModel
+import java.io.*
 import java.lang.IllegalStateException
 import java.util.Collections
 import kotlin.collections.LinkedHashMap
@@ -73,11 +72,37 @@ class LocalFileManager(override var rootDirectoryPath: String): FileManager {
         return filesCache[currentDir] ?: mutableListOf()
     }
 
-    override fun getInputStream(sourceFilePath: String): InputStream {
-        return FileInputStream(sourceFilePath)
+    override fun getInputStreamWithSize(sourceFilePath: String): Pair<InputStream, Long> {
+        val size = File(sourceFilePath).length()
+        return Pair(FileInputStream(sourceFilePath), size)
     }
 
     override fun paste(sourceFilePath: String, destFileName: String, destinationDir: String) = Unit
+
+    fun pasteFromRemote(inputStreamAndSize: Pair<InputStream, Long>, destFileName: String, destDir: String) {
+        val (inputStream, size) = inputStreamAndSize
+        val input = BufferedInputStream(inputStream)
+        val destFile = File(destDir, destFileName)
+
+        if (destFile.exists()) {
+            destFile.delete()
+        }
+
+        val bos = BufferedOutputStream(FileOutputStream(destFile))
+        val bytesIn = ByteArray(BUFFER_SIZE)
+        var read = 0
+        var totalReadBytes = 0
+        fileOpListener?.onOpStarted()
+        while (input.read(bytesIn).also { read = it } != -1) {
+            bos.write(bytesIn, 0, read)
+            totalReadBytes += read
+            Log.d("DMK", "READ $totalReadBytes")
+            Log.d("DMK", "TOTAL $size")
+            fileOpListener?.onUpdateOpProgress(totalReadBytes.toLong(), size)
+        }
+        bos.close()
+        fileOpListener?.onOpComplete()
+    }
 
     override fun rename(oldName: String, newName: String): FileInfo {
         val resultFile = File(currentDir, newName)
@@ -95,6 +120,8 @@ class LocalFileManager(override var rootDirectoryPath: String): FileManager {
 
         return resultFileInfo
     }
+
+    override fun exists(path: String): Boolean = false
 
     override fun delete(filePath: String) {
         val fileToDelete = File(filePath)
@@ -133,5 +160,9 @@ class LocalFileManager(override var rootDirectoryPath: String): FileManager {
 
     fun changeLocalRootDir(newRoot: String) {
         rootDirectoryPath = newRoot
+    }
+
+    companion object {
+        private const val BUFFER_SIZE = 4096
     }
 }

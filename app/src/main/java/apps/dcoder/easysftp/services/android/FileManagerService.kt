@@ -27,6 +27,7 @@ import android.app.NotificationChannel
 import android.graphics.Color
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import apps.dcoder.easysftp.services.storage.StorageDiscoveryService
 
 enum class FileManagerType {
     LOCAL, REMOTE
@@ -35,6 +36,8 @@ enum class FileManagerType {
 sealed class FileManagerOperationResult private constructor() {
     data class ListOperationResult(val files: List<FileInfo>): FileManagerOperationResult()
     data class RenameOperationResult(val renamedFileInfo: FileInfo, val destIndex: Int): FileManagerOperationResult()
+    open class RemoteDownloadOperationResult(val destinationPath: String?) : FileManagerOperationResult()
+    object RemoteDownloadNoSuchFileResult : RemoteDownloadOperationResult(null)
     object DeleteOperationResult : FileManagerOperationResult()
 }
 
@@ -45,12 +48,17 @@ class FileManagerService : CoroutineService(), KoinComponent {
     private var localRootDirPath = ""
     private var remoteRootDirPath = ""
 
+    private var fileOpListener: FileOperationStatusListener? = null
+
     private val localFileManager: FileManager by inject {
         parametersOf(FileManagerType.LOCAL, localRootDirPath)
     }
+
     private val remoteFileManager: FileManager by inject {
         parametersOf(FileManagerType.REMOTE, remoteRootDirPath)
     }
+
+    private val storageDiscoveryService: StorageDiscoveryService by inject()
 
     private val _fileManagerOperationLiveData = MutableLiveResource<FileManagerOperationResult>()
     val fileManagerOperationLiveData: LiveResource<FileManagerOperationResult> = _fileManagerOperationLiveData
@@ -158,13 +166,20 @@ class FileManagerService : CoroutineService(), KoinComponent {
     }
 
     fun doPaste(clipBoardEntry: ClipBoardManager.ClipBoardEntry) = launch(Dispatchers.IO) {
-        val inputStream = if (clipBoardEntry.isLocalFile) {
-            localFileManager.getInputStream(clipBoardEntry.filePath)
-        } else {
-            remoteFileManager.getInputStream(clipBoardEntry.filePath)
+        currentFileManager.paste(clipBoardEntry.filePath, clipBoardEntry.fileNameWithExt)
+    }
+
+    fun downloadFileFromRemote(sourceFile: String, destFileName: String, destDir: String) = launch(Dispatchers.IO) {
+        if (!currentFileManager.exists(sourceFile)) {
+            _fileManagerOperationLiveData.dispatchSuccessOnMain(FileManagerOperationResult.RemoteDownloadNoSuchFileResult)
+            return@launch
         }
 
-        currentFileManager.paste(clipBoardEntry.filePath, clipBoardEntry.fileNameWithExt)
+        val inputStreamAndSize = remoteFileManager.getInputStreamWithSize(sourceFile)
+        localFileManager.fileOpListener = fileOpListener
+
+        (localFileManager as LocalFileManager).pasteFromRemote(inputStreamAndSize, destFileName, destDir)
+        _fileManagerOperationLiveData.dispatchSuccessOnMain(FileManagerOperationResult.RemoteDownloadOperationResult(null))
     }
 
     inner class FileManagerBinder : Binder() {
@@ -194,7 +209,7 @@ class FileManagerService : CoroutineService(), KoinComponent {
     private fun initFileManagerListeners() {
         val builder = getProgressNotificationBuilder("File Manager Operation", "Copying")
 
-        currentFileManager.fileOpListener = object : FileOperationStatusListener {
+        fileOpListener = object : FileOperationStatusListener {
             override fun onOpStarted() {
                 builder.setProgress(100, 0, false)
                 startForeground(NOTIFICATION_ID, builder.build())
@@ -214,11 +229,13 @@ class FileManagerService : CoroutineService(), KoinComponent {
 
                 notificationManager.notify(NOTIFICATION_ID, builder.build())
                 ClipBoardManager.clear()
+                // TODO remove this to fragment
                 listCurrentDirectory(true)
                 stopForeground(true)
             }
-
         }
+
+        currentFileManager.fileOpListener = fileOpListener
     }
 
     private fun getProgressNotificationBuilder(title: String, opText: String): NotificationCompat.Builder {
@@ -234,13 +251,10 @@ class FileManagerService : CoroutineService(), KoinComponent {
             notificationManager.createNotificationChannel(channel)
         }
 
-        val notificationAction =
-            NotificationCompat.Action.Builder(null, "Stop service", getStopSelfIntent(this::class.java)).build()
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(title)
             .setContentText(opText)
             .setSmallIcon(android.R.drawable.stat_sys_download)
-            .addAction(notificationAction)
     }
 
     fun renameCurrent(oldName: String, newName: String) = launch(Dispatchers.IO) {
@@ -260,6 +274,10 @@ class FileManagerService : CoroutineService(), KoinComponent {
     fun delete(filePath: String) = launch(Dispatchers.IO) {
         currentFileManager.delete(filePath)
         _fileManagerOperationLiveData.dispatchSuccessOnMain(FileManagerOperationResult.DeleteOperationResult)
+    }
+
+    fun getLocalDownloadsFolder(): String {
+        return "${storageDiscoveryService.discoverInternalStoragePath()}/Download"
     }
 
     override fun onDestroy() {

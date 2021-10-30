@@ -3,9 +3,7 @@ package apps.dcoder.easysftp.viewmodels
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import apps.dcoder.easysftp.fragments.dialog.DialogActionListener
 import apps.dcoder.easysftp.util.*
-import com.github.junrar.Archive
 import com.github.junrar.Junrar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -14,14 +12,31 @@ import java.util.Stack
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 
+import android.content.Intent
+import android.net.Uri
+import androidx.core.content.FileProvider
+import apps.dcoder.easysftp.MainApplication
+import apps.dcoder.easysftp.extensions.isAppInstalled
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
+
 enum class ProgressState {
     LOADING, IDLE
 }
-class FileViewViewModel(rootDirPath: String) : ViewModel(), DialogActionListener<String> {
+
+enum class ArchiveType {
+    ZIP, RAR
+}
+
+class FileViewViewModel(private val rootDirPath: String) : ViewModel() {
 
     private var prevItemPos = 0
     private var prevScrollOffset = 0
     private var indexOfRenamedFile = -1
+    private var downloadsDir: String? = null
+
+    private val lock = ReentrantLock()
+    private val subsCheckAndDownload = lock.newCondition()
 
     private val _progressState = MutableLiveEvent(Event(ProgressState.LOADING))
     val progressState: LiveEvent<ProgressState> = _progressState
@@ -31,6 +46,15 @@ class FileViewViewModel(rootDirPath: String) : ViewModel(), DialogActionListener
 
     private val _archiveExtractionEvent = MutableLiveResource<Unit>()
     val archiveExtractionEvent: LiveResource<Unit> = _archiveExtractionEvent
+
+    private val _eventDownloadSubs = MutableLiveEvent<String>()
+    val eventDownloadSubs: LiveEvent<String> = _eventDownloadSubs
+
+    private val _eventPlayVideo = MutableLiveEvent<Intent>()
+    val eventPlayVideo: LiveEvent<Intent> = _eventPlayVideo
+
+    private val _eventInstallVLC = MutableLiveEvent<Unit>()
+    val eventInstallVLC = _eventInstallVLC
 
     val positionStack: Stack<Pair<Int, Int>> = Stack()
     var shouldUnbindFileService = false
@@ -81,7 +105,7 @@ class FileViewViewModel(rootDirPath: String) : ViewModel(), DialogActionListener
         prevScrollOffset = 0
     }
 
-    fun extractIfArchive(filePath: String, fileName: String) = viewModelScope.launch(Dispatchers.IO) {
+    fun handleFileType(filePath: String, fileName: String, isLocal: Boolean) = viewModelScope.launch(Dispatchers.IO) {
         val indexOfLastDot = fileName.lastIndexOf('.')
         if (indexOfLastDot == -1) {
             Log.e("DMK", "File has nor file extension")
@@ -94,21 +118,46 @@ class FileViewViewModel(rootDirPath: String) : ViewModel(), DialogActionListener
         // TODO extraction progress
         when (ext.lowercase()) {
             "zip" -> {
-                _archiveExtractionEvent.dispatchLoadingOnMain()
-                unzip(filePath, filePathWithoutExt)
-                _archiveExtractionEvent.dispatchSuccessOnMain(Unit)
+                unArchiveIfPossible(ArchiveType.ZIP, filePath, filePathWithoutExt, isLocal)
             }
 
             "rar" -> {
-                _archiveExtractionEvent.dispatchLoadingOnMain()
-                unrar(filePath, filePathWithoutExt)
-                _archiveExtractionEvent.dispatchSuccessOnMain(Unit)
+                unArchiveIfPossible(ArchiveType.RAR, filePath, filePathWithoutExt, isLocal)
+            }
+
+            in videoFormats -> {
+                playVideo(filePath, filePathWithoutExt, isLocal)
             }
 
             else -> {
-                Log.d("DMK", "Not a zip nor rar")
+                Log.d("DMK", "Not a supported format")
             }
         }
+    }
+
+    private suspend fun unArchiveIfPossible(
+        archiveType: ArchiveType,
+        filePath: String,
+        filePathWithoutExt: String,
+        isLocal: Boolean
+    ) {
+        if (!isLocal) {
+            Log.d(this::class.java.simpleName, "Can not unzip on remote!")
+            return
+        }
+
+        _archiveExtractionEvent.dispatchLoadingOnMain()
+        when (archiveType) {
+            ArchiveType.ZIP -> {
+                unzip(filePath, filePathWithoutExt)
+            }
+
+            ArchiveType.RAR -> {
+                unrar(filePath, filePathWithoutExt)
+            }
+        }
+
+        _archiveExtractionEvent.dispatchSuccessOnMain(Unit)
     }
 
     private fun unzip(archivePath: String, destPath: String) {
@@ -158,12 +207,57 @@ class FileViewViewModel(rootDirPath: String) : ViewModel(), DialogActionListener
         }
     }
 
-    override fun onDialogPositiveClick(result: String) {
+    fun onSubtitlesLoaded(downloadsDir: String?) {
+        lock.withLock {
+            this.downloadsDir = downloadsDir
+            subsCheckAndDownload.signal()
+        }
+    }
+
+    private fun playVideo(filePath: String, filePathWithoutExt: String, isLocal: Boolean) {
+        if (MainApplication.appContext.isAppInstalled(VLC_PLAYER_PACKAGE)) {
+            val vlcIntent = Intent(Intent.ACTION_VIEW)
+            val uri: Uri = if (isLocal) {
+                val appContext = MainApplication.appContext
+                vlcIntent.putExtra("subtitles_location", "$filePathWithoutExt.srt")
+                FileProvider.getUriForFile(appContext, "${appContext.packageName}.provider", File(filePath))
+            } else {
+                val ipAndPath = rootDirPath.split('@')[1]
+                val ip = if (ipAndPath.contains('/')) {
+                    ipAndPath.split('/')[0]
+                } else {
+                    ipAndPath
+                }
+
+                lock.withLock {
+                    _eventDownloadSubs.postValue(Event("$filePathWithoutExt.srt"))
+                    subsCheckAndDownload.await()
+                }
+
+                if (downloadsDir != null) {
+                    vlcIntent.putExtra("subtitles_location", "$downloadsDir/sub.srt")
+                }
+
+                Uri.parse("sftp://$ip$filePath")
+            }
+
+            vlcIntent.setPackage(VLC_PLAYER_PACKAGE)
+            vlcIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            vlcIntent.setDataAndTypeAndNormalize(uri, "video/*")
+            _eventPlayVideo.postValue(Event(vlcIntent))
+        } else {
+            _eventInstallVLC.postValue(Event(Unit))
+        }
+    }
+
+    fun onDialogPositiveClick(result: String) {
         Log.d("DMK", "Pass entered: $result")
         _eventPasswordSet.value = Event(result)
     }
 
     companion object {
         private const val BUFFER_SIZE = 4096
+        const val VLC_PLAYER_PACKAGE = "org.videolan.vlc"
+        private val videoFormats = setOf("mkv", "avi", "mp4", "3gp", )
     }
 }
