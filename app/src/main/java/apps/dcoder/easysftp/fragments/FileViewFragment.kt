@@ -318,12 +318,13 @@ class FileViewFragment: Fragment(), ListItemClickListener {
         // Acquire current list item's position and offset
         // Store the data in a stack
         // Then list the new directory
-        val childAtTopOfList: View = recyclerView.getChildAt(0)
-        val prevItemPos = recyclerView.getChildAdapterPosition(childAtTopOfList)
-        val prevScrollOffset = childAtTopOfList.top
+        val currentVisibleItemPos = (recyclerView.layoutManager as LinearLayoutManager)
+            .findFirstVisibleItemPosition()
+
+        val prevScrollOffset = recyclerView.getChildAt(0).top
 
         // Save the scroll position for this directory
-        viewModel.positionStack.add(Pair(prevItemPos, prevScrollOffset))
+        viewModel.positionStack.add(Pair(currentVisibleItemPos, prevScrollOffset))
     }
 
     override fun onLongClick(clickedItemIndex: Int, view: View) {
