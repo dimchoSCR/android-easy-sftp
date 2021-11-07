@@ -196,10 +196,12 @@ class FileManagerService : CoroutineService(), KoinComponent {
                     _sshPassRequestEvent.postValue(Event(Unit))
                 }
             } else {
-                localRootDirPath = rootDirectory
                 val localFm = localFileManager as LocalFileManager
-                localFm.changeLocalRootDir(rootDirectory)
-                localFm.currentDir = rootDirectory
+                if (localRootDirPath != rootDirectory) {
+                    localRootDirPath = rootDirectory
+                    localFm.changeLocalRootDir(rootDirectory)
+                    localFm.currentDir = rootDirectory
+                }
 
                 currentFileManager = localFm
             }

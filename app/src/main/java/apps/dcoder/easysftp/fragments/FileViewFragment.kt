@@ -321,10 +321,12 @@ class FileViewFragment: Fragment(), ListItemClickListener {
         val currentVisibleItemPos = (recyclerView.layoutManager as LinearLayoutManager)
             .findFirstVisibleItemPosition()
 
-        val prevScrollOffset = recyclerView.getChildAt(0).top
-
-        // Save the scroll position for this directory
-        viewModel.positionStack.add(Pair(currentVisibleItemPos, prevScrollOffset))
+        val topView = recyclerView.getChildAt(0)
+        if (topView != null) {
+            val prevScrollOffset = topView.top
+            // Save the scroll position for this directory
+            viewModel.positionStack.add(Pair(currentVisibleItemPos, prevScrollOffset))
+        }
     }
 
     override fun onLongClick(clickedItemIndex: Int, view: View) {
