@@ -2,6 +2,7 @@ package apps.dcoder.easysftp.filemanager.remote
 
 import android.util.Log
 import apps.dcoder.easysftp.filemanager.AlphaNumericComparator
+import apps.dcoder.easysftp.filemanager.ClipBoardManager
 import apps.dcoder.easysftp.filemanager.FileManager
 import apps.dcoder.easysftp.filemanager.OnFileManagerResultListener
 import apps.dcoder.easysftp.model.FileInfo
@@ -170,13 +171,28 @@ class RemoteFileManager(fullyQualifiedPath: String) : FileManager {
         return Pair(sftpChannel.get(sourceFilePath), size)
     }
 
-    override fun paste(sourceFilePath: String, destFileName: String, destinationDir: String) {
-        val destFile = "$destinationDir/$destFileName"
-        val progressMonitor = SftpProgressMonitor()
-        progressMonitor.sftpOpListener = this.fileOpListener
+    override fun paste(clipBoardEntry: ClipBoardManager.ClipBoardEntry, destinationDir: String) {
+        val destFile = "$destinationDir/${clipBoardEntry.fileNameWithExt}"
 
-        lock.withLock {
-            sftpChannel.put(sourceFilePath, destFile, progressMonitor)
+        if (clipBoardEntry.isLocalFile) {
+            val progressMonitor = SftpProgressMonitor()
+            progressMonitor.sftpOpListener = this.fileOpListener
+
+            lock.withLock {
+                sftpChannel.put(clipBoardEntry.filePath, destFile, progressMonitor)
+            }
+        } else {
+            val progressMonitor = SftpProgressMonitor(sftpChannel.lstat(clipBoardEntry.filePath).size)
+            progressMonitor.sftpOpListener = this.fileOpListener
+            val downloadChannel = session.openChannel("sftp") as ChannelSftp
+            downloadChannel.connect()
+
+            lock.withLock {
+                val inputStream = downloadChannel.get(clipBoardEntry.filePath)
+                sftpChannel.put(inputStream, destFile, progressMonitor)
+                Log.d("DMK", "Fuuck")
+                downloadChannel.exit()
+            }
         }
     }
 

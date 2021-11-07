@@ -61,9 +61,8 @@ dependencies {
     implementation deps.navigation.fragmentKTX
     implementation deps.navigation.navigationUiKTX
 
-    // Jsch
-    implementation deps.jsch
-
+    // Improved Jsch
+    implementation files('libs/jsch.jar')
     // RAR
     implementation "com.github.junrar:junrar:7.4.0"
 

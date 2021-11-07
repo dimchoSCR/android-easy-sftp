@@ -166,11 +166,15 @@ class FileManagerService : CoroutineService(), KoinComponent {
     }
 
     fun doPaste(clipBoardEntry: ClipBoardManager.ClipBoardEntry) = launch(Dispatchers.IO) {
-        currentFileManager.paste(clipBoardEntry.filePath, clipBoardEntry.fileNameWithExt)
+        if (currentFileManager is LocalFileManager && !clipBoardEntry.isLocalFile) {
+            downloadFileFromRemote(clipBoardEntry.filePath, clipBoardEntry.fileNameWithExt, currentFileManager.currentDir)
+        } else {
+            currentFileManager.paste(clipBoardEntry)
+        }
     }
 
     fun downloadFileFromRemote(sourceFile: String, destFileName: String, destDir: String) = launch(Dispatchers.IO) {
-        if (!currentFileManager.exists(sourceFile)) {
+        if (!remoteFileManager.exists(sourceFile)) {
             _fileManagerOperationLiveData.dispatchSuccessOnMain(FileManagerOperationResult.RemoteDownloadNoSuchFileResult)
             return@launch
         }

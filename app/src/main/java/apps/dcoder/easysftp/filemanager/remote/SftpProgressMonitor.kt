@@ -9,14 +9,19 @@ interface FileOperationStatusListener {
     fun onOpComplete()
 }
 
-class SftpProgressMonitor : SftpProgressMonitor {
+class SftpProgressMonitor(private val totalBytes: Long = 0) : SftpProgressMonitor {
     private var totalSize = 0L
     private var bytesCopied = 0L
 
     var sftpOpListener: FileOperationStatusListener? = null
 
     override fun init(op: Int, src: String?, dest: String?, max: Long) {
-        totalSize = max
+        totalSize = if (max != -1L) {
+            max
+        } else {
+            totalBytes
+        }
+
         sftpOpListener?.onOpStarted()
         Log.d("Copy", "Copying $max bytes from: $src, to: $dest")
     }

@@ -36,8 +36,6 @@ versions.power_mock_mockito_api = "2.0.2"
 versions.power_mock = "2.0.5"
 versions.livedataExt = "2.2.0"
 
-versions.jsch = "0.1.55"
-
 def support = [:]
 support.app_compat = "androidx.appcompat:appcompat:$versions.appcompat"
 support.core_ktx = "androidx.core:core-ktx:$versions.core_ktx"
@@ -117,7 +115,5 @@ lifecycle_kotlin.runtime = "androidx.lifecycle:lifecycle-runtime-ktx:$versions.l
 lifecycle_kotlin.livedataExt = "androidx.lifecycle:lifecycle-livedata-ktx:$versions.lifecycle"
 
 deps.lifecycle_kotlin = lifecycle_kotlin
-
-deps.jsch = "com.jcraft:jsch:$versions.jsch"
 
 ext.deps = deps

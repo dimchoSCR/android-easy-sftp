@@ -92,7 +92,7 @@ interface FileManager: Serializable {
 
     fun getInputStreamWithSize(sourceFilePath: String): Pair<InputStream, Long>
 
-    fun paste(sourceFilePath: String, destFileName: String, destinationDir: String = currentDir)
+    fun paste(clipBoardEntry: ClipBoardManager.ClipBoardEntry, destinationDir: String = currentDir)
 
     fun rename(oldName: String, newName: String): FileInfo
 
