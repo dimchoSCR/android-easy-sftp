@@ -89,11 +89,13 @@ class FileViewViewModel(private val rootDirPath: String) : ViewModel() {
     }
 
     fun popSavedScrollPositions() {
-        val positionPair = positionStack.pop()
-        val (prevItemPos, prevScrollOffset) = positionPair
+        if (positionStack.isNotEmpty()) {
+            val positionPair = positionStack.pop()
+            val (prevItemPos, prevScrollOffset) = positionPair
 
-        this.prevItemPos = prevItemPos
-        this.prevScrollOffset = prevScrollOffset
+            this.prevItemPos = prevItemPos
+            this.prevScrollOffset = prevScrollOffset
+        }
     }
 
     fun getSavedScrollPositions(): Pair<Int, Int> {

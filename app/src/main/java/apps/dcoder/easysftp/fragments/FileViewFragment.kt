@@ -281,9 +281,7 @@ class FileViewFragment: Fragment(), ListItemClickListener {
         recyclerView.startLayoutAnimation()
         filesAdapter.updateFileList(fileList)
 
-        val linearLayoutManager = recyclerView.layoutManager as LinearLayoutManager
-        val (prevItemPos, prevScrollOffset) = viewModel.getSavedScrollPositions()
-        linearLayoutManager.scrollToPositionWithOffset(prevItemPos, prevScrollOffset)
+        scrollToSavedPosition()
 
         if (fileList.isEmpty()) {
             tvEmpty.visibility = View.VISIBLE
@@ -292,6 +290,12 @@ class FileViewFragment: Fragment(), ListItemClickListener {
         }
 
         viewModel.lastListedDir = fileManagerService.getCurrentDir()
+    }
+
+    private fun scrollToSavedPosition() {
+        val linearLayoutManager = recyclerView.layoutManager as LinearLayoutManager
+        val (prevItemPos, prevScrollOffset) = viewModel.getSavedScrollPositions()
+        linearLayoutManager.scrollToPositionWithOffset(prevItemPos, prevScrollOffset)
     }
 
     override fun onListItemClick(clickedItemIndex: Int) {
@@ -415,6 +419,11 @@ class FileViewFragment: Fragment(), ListItemClickListener {
         }
     }
 
+    override fun onStop() {
+        super.onStop()
+        saveRvPosition()
+    }
+
     override fun onResume() {
         super.onResume()
 
@@ -425,6 +434,9 @@ class FileViewFragment: Fragment(), ListItemClickListener {
             viewModel.serviceHasBeenKilled = true
             bindFileManagerService()
         }
+
+        viewModel.popSavedScrollPositions()
+        scrollToSavedPosition()
     }
 
     override fun onDestroy() {
