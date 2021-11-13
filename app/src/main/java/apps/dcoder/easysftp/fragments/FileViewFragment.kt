@@ -293,6 +293,7 @@ class FileViewFragment: Fragment(), ListItemClickListener {
     }
 
     private fun scrollToSavedPosition() {
+        viewModel.popSavedScrollPositions()
         val linearLayoutManager = recyclerView.layoutManager as LinearLayoutManager
         val (prevItemPos, prevScrollOffset) = viewModel.getSavedScrollPositions()
         linearLayoutManager.scrollToPositionWithOffset(prevItemPos, prevScrollOffset)
@@ -438,7 +439,6 @@ class FileViewFragment: Fragment(), ListItemClickListener {
             bindFileManagerService()
         }
 
-        viewModel.popSavedScrollPositions()
         scrollToSavedPosition()
     }
 
