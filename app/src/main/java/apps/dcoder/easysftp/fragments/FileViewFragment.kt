@@ -293,7 +293,6 @@ class FileViewFragment: Fragment(), ListItemClickListener {
     }
 
     private fun scrollToSavedPosition() {
-        viewModel.popSavedScrollPositions()
         val linearLayoutManager = recyclerView.layoutManager as LinearLayoutManager
         val (prevItemPos, prevScrollOffset) = viewModel.getSavedScrollPositions()
         linearLayoutManager.scrollToPositionWithOffset(prevItemPos, prevScrollOffset)
@@ -414,6 +413,8 @@ class FileViewFragment: Fragment(), ListItemClickListener {
         if (!fileManagerService.isOnRootDir()) {
             recyclerView.stopScroll()
 
+            viewModel.popSavedScrollPositions()
+
             // Gets the parent directory of the currentDirectory
             // Then updates the currentDirPath reference
             fileManagerService.listParent()
@@ -439,6 +440,7 @@ class FileViewFragment: Fragment(), ListItemClickListener {
             bindFileManagerService()
         }
 
+        viewModel.popSavedScrollPositions()
         scrollToSavedPosition()
     }
 
