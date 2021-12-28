@@ -37,6 +37,8 @@ import android.content.*
 import android.os.*
 import android.content.Intent
 import android.net.Uri
+import androidx.core.content.FileProvider
+import java.io.File
 
 class FileViewFragment: Fragment(), ListItemClickListener {
 
@@ -233,6 +235,19 @@ class FileViewFragment: Fragment(), ListItemClickListener {
             val goToMarket = Intent(Intent.ACTION_VIEW)
                 .setData(Uri.parse("market://details?id=${FileViewViewModel.VLC_PLAYER_PACKAGE}"))
             startActivity(goToMarket)
+        }
+
+        viewModel.eventLaunchFileViewIntent.consume(this.viewLifecycleOwner) { filePath ->
+            val intent = Intent(Intent.ACTION_VIEW)
+            val fileUri = FileProvider.getUriForFile(
+                this.requireContext(),
+                "${this.requireContext().packageName}.provider",
+                File(filePath)
+            )
+
+            intent.data = fileUri
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            startActivity(Intent.createChooser(intent, "Choose an application to handle the file"))
         }
     }
 

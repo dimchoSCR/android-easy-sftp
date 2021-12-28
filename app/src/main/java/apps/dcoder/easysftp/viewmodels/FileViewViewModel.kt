@@ -56,6 +56,9 @@ class FileViewViewModel(private val rootDirPath: String) : ViewModel() {
     private val _eventInstallVLC = MutableLiveEvent<Unit>()
     val eventInstallVLC = _eventInstallVLC
 
+    private val _eventLaunchFileViewIntent = MutableLiveEvent<String>()
+    val eventLaunchFileViewIntent = _eventLaunchFileViewIntent
+
     val positionStack: Stack<Pair<Int, Int>> = Stack()
     var shouldUnbindFileService = false
     var lastListedDir: String = rootDirPath
@@ -108,13 +111,7 @@ class FileViewViewModel(private val rootDirPath: String) : ViewModel() {
     }
 
     fun handleFileType(filePath: String, fileName: String, isLocal: Boolean) = viewModelScope.launch(Dispatchers.IO) {
-        val indexOfLastDot = fileName.lastIndexOf('.')
-        if (indexOfLastDot == -1) {
-            Log.e("DMK", "File has nor file extension")
-            return@launch
-        }
-
-        val ext = fileName.substring(indexOfLastDot + 1)
+        val ext = getFileExtension(fileName) ?: return@launch
         val filePathWithoutExt = filePath.removeSuffix(".$ext")
 
         // TODO extraction progress
@@ -132,9 +129,23 @@ class FileViewViewModel(private val rootDirPath: String) : ViewModel() {
             }
 
             else -> {
-                Log.d("DMK", "Not a supported format")
+                if (isLocal) {
+                    _eventLaunchFileViewIntent.postValue(Event(filePath))
+                } else {
+                    Log.d(this.javaClass.simpleName, "File clicked no op")
+                }
             }
         }
+    }
+
+    private fun getFileExtension(fileName: String): String? {
+        val indexOfLastDot = fileName.lastIndexOf('.')
+        if (indexOfLastDot == -1) {
+            Log.e("DMK", "File has no file extension")
+            return null
+        }
+
+        return fileName.substring(indexOfLastDot + 1)
     }
 
     private suspend fun unArchiveIfPossible(
