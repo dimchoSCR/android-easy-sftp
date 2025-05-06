@@ -5,9 +5,12 @@ import android.content.IntentFilter
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import apps.dcoder.easysftp.broadcast.RemovableMediaStatusBroadcastReceiver
-import apps.dcoder.easysftp.filemanager.FileManager
 import apps.dcoder.easysftp.services.android.FileManagerService
+import com.google.android.material.appbar.AppBarLayout
 import org.koin.android.ext.android.inject
 
 class MainActivity : AppCompatActivity() {
@@ -25,6 +28,15 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         setSupportActionBar(findViewById(R.id.toolbar))
+
+        val appBar: AppBarLayout = findViewById(R.id.app_bar)
+        val appbarTopPadding = appBar.paddingTop
+        ViewCompat.setOnApplyWindowInsetsListener(appBar) { v, insets ->
+            v.updatePadding(top = appbarTopPadding +
+                    insets.getInsets(WindowInsetsCompat.Type.systemBars()).top)
+            insets
+        }
+
         initializeEjectIntentFilter()
 
         this.registerReceiver(removableMediaStatusBroadcastReceiver, ejectedMediaIntentFilter)

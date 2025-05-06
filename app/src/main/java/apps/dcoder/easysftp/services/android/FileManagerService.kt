@@ -24,6 +24,7 @@ import org.koin.core.parameter.parametersOf
 
 import android.app.Notification
 import android.app.NotificationChannel
+import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
 import android.graphics.Color
 import android.os.Build
 import androidx.core.app.NotificationCompat
@@ -218,7 +219,11 @@ class FileManagerService : CoroutineService(), KoinComponent {
         fileOpListener = object : FileOperationStatusListener {
             override fun onOpStarted() {
                 builder.setProgress(100, 0, false)
-                startForeground(NOTIFICATION_ID, builder.build())
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    startForeground(NOTIFICATION_ID, builder.build(), FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+                } else {
+                    startForeground(NOTIFICATION_ID, builder.build())
+                }
             }
 
             override fun onUpdateOpProgress(bytesTransferred: Long, totalBytes: Long) {

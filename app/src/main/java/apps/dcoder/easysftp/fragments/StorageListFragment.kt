@@ -3,7 +3,7 @@ package apps.dcoder.easysftp.fragments
 import android.Manifest
 import android.content.Intent
 import android.os.*
-import android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION
+import android.provider.Settings
 import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -14,6 +14,7 @@ import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.navigation.fragment.findNavController
+import apps.dcoder.easysftp.BuildConfig
 import apps.dcoder.easysftp.R
 import apps.dcoder.easysftp.adapters.StorageEntryAdapter
 import apps.dcoder.easysftp.fragments.dialog.StorageAddDialogFragment
@@ -31,6 +32,7 @@ import kotlinx.android.synthetic.main.fragment_storage_view.*
 import kotlinx.android.synthetic.main.fragment_storage_view.view.*
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
+import androidx.core.net.toUri
 
 class StorageListFragment : Fragment() {
 
@@ -42,6 +44,7 @@ class StorageListFragment : Fragment() {
     private val progressRunnable = Runnable { pbLoading.visibility = View.VISIBLE }
 
     private lateinit var requestPermLauncher: ActivityResultLauncher<String>
+    private lateinit var storagePermLauncherR: ActivityResultLauncher<Intent>
 
     companion object {
         private const val DISPLAY_DELAY_LOADING_INDICATOR = 160L
@@ -57,12 +60,25 @@ class StorageListFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_storage_view, container, false)
         view.lvStorageVolumes.adapter = storageEntryAdapter
 
-        requestPermLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-            if (isGranted) {
+        val doOnStoragePermissionResult: (Boolean) -> Unit = { permissionGranted: Boolean ->
+            if (permissionGranted) {
                 onStoragePermissionGranted()
             } else {
                 onStoragePermissionDenied()
             }
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            storagePermLauncherR = registerForActivityResult(
+                ActivityResultContracts.StartActivityForResult()
+            ) { _ ->
+                doOnStoragePermissionResult(Environment.isExternalStorageManager())
+            }
+        } else {
+            requestPermLauncher =
+                registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+                    doOnStoragePermissionResult(isGranted)
+                }
         }
 
         return view
@@ -138,15 +154,27 @@ class StorageListFragment : Fragment() {
             storageAddDialogFragment.show(childFragmentManager, TAG_ADD_SFTP_STORAGE_DIALOG)
         }
 
-        storageEntryAdapter.onItemClickListener = { position ->
+        storageEntryAdapter.onItemClickListener = onItemClickListener@{ position ->
             storageListViewModel.selectedStorageIndex = position
-            PermissionUtil.askPermissionIfNotGranted(requestPermLauncher, Manifest.permission.WRITE_EXTERNAL_STORAGE) {
-                onStoragePermissionGranted()
-            }
-
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                if (!Environment.isExternalStorageManager()) {
-                    startActivity(Intent(ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION))
+                if (Environment.isExternalStorageManager()) {
+                    onStoragePermissionGranted()
+
+                    return@onItemClickListener
+                }
+
+                val intent = Intent(
+                    Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                    "package:${BuildConfig.APPLICATION_ID}".toUri()
+                )
+
+                storagePermLauncherR.launch(intent)
+            } else {
+                PermissionUtil.askPermissionIfNotGranted(
+                    requestPermLauncher,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+                ) {
+                    onStoragePermissionGranted()
                 }
             }
         }

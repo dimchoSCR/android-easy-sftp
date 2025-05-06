@@ -448,7 +448,9 @@ class FileViewFragment: Fragment(), ListItemClickListener {
         super.onResume()
 
         val activityManager = requireContext().getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        if (!activityManager.isServiceRunning(FileManagerService::class.java)) {
+        if (::fileManagerService.isInitialized &&
+            !activityManager.isServiceRunning(FileManagerService::class.java)) {
+
             unbindFileManagerService()
             requireActivity().startService(Intent(requireContext(), FileManagerService::class.java))
             viewModel.serviceHasBeenKilled = true
